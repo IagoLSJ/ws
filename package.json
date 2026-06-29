@@ -1,0 +1,23 @@
+{
+  "name": "multinegocio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "format": "prettier --write \"**/*.{ts,js,vue,json,yml,yaml}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "@prisma/client", "@prisma/engines", "prisma", "esbuild", "msgpackr-extract", "nestjs-pino", "vue-demi", "@parcel/watcher", "@nestjs/core"]
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

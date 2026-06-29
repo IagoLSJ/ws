@@ -1,0 +1,253 @@
+{
+  "name": "WhatsApp Lanchonete",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 300],
+      "parameters": {
+        "path": "whatsapp",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "functionCode": "const data = $input.first().json.data;\nconst key = data?.key || {};\nconst message = data?.message || {};\nconst telefone = (key.remoteJid || \"\").replace(/@.*$/, \"\");\nconst nome = data.pushName || \"\";\nconst texto = message.conversation || message.extendedTextMessage?.text || message.imageMessage?.caption || \"\";\nreturn { telefone, nome, texto: texto.toLowerCase().trim() };"
+      }
+    },
+    {
+      "name": "Route Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.texto }}",
+        "rules": [
+          { "value2": "cardapio", "output": 0 },
+          { "value2": "cardapio", "output": 0 },
+          { "value2": "menu", "output": 0 },
+          { "value2": "1", "output": 0 },
+          { "value2": "status", "output": 1 },
+          { "value2": "2", "output": 1 },
+          { "value2": "oi", "output": 2 },
+          { "value2": "ola", "output": 2 },
+          { "value2": "ola", "output": 2 }
+        ],
+        "fallbackOutput": 2
+      }
+    },
+    {
+      "name": "Buscar Cardapio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 150],
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3000/api/vitrine/lanchonete-modelo",
+        "authentication": "none",
+        "options": {}
+      }
+    },
+    {
+      "name": "Formatar Cardapio",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1000, 150],
+      "parameters": {
+        "functionCode": "const data = $input.first().json;\nconst produtos = data.produtos || [];\nconst categorias = {};\nconst telefone = $items(\"Parse Message\").first().json.telefone;\nfor (const p of produtos) {\n  const cat = p.categoria?.nome || \"Geral\";\n  if (!categorias[cat]) categorias[cat] = [];\n  const preco = p.precoPromocional || p.preco;\n  categorias[cat].push(\"  \" + p.nome + \" - R$\" + preco);\n}\nlet texto = \"*CARDAPIO* \\n\\n\";\nfor (const [cat, itens] of Object.entries(categorias)) {\n  texto += \"*\" + cat + \"*\\n\" + itens.join(\"\\n\") + \"\\n\\n\";\n}\ntexto += \"_Para pedir, digite o nome do item e a quantidade_\";\nreturn { telefone, texto };"
+      }
+    },
+    {
+      "name": "Buscar Pedidos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 450],
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3000/api/whatsapp/lanchonete-modelo/meus-pedidos",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "telefone",
+              "value": "={{ $items(\"Parse Message\").first().json.telefone }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Formatar Pedidos",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1000, 450],
+      "parameters": {
+        "functionCode": "const items = $input.all();\nconst nome = $items(\"Parse Message\").first().json.nome || \"Cliente\";\nconst telefone = $items(\"Parse Message\").first().json.telefone;\nconst pedidos = items.length === 1 && Array.isArray(items[0].json) ? items[0].json : items.map(i => i.json);\nif (!pedidos || !pedidos.length) {\n  return { texto: \"Ola \" + nome + \"! Voce ainda nao tem pedidos.\\nDigite *cardapio* para ver nosso menu.\", telefone };\n}\nlet texto = \"*Seus Pedidos*\\n\\n\";\nfor (const p of pedidos) {\n  const data = new Date(p.criadoEm).toLocaleDateString(\"pt-BR\");\n  texto += \"#\" + p.id.slice(0,8) + \" - \" + data + \"\\nStatus: *\" + p.status + \"*\\nTotal: R$\" + p.total + \"\\n\\n\";\n}\nreturn { texto, telefone };"
+      }
+    },
+    {
+      "name": "Menu Boas-Vindas",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1000, 650],
+      "parameters": {
+        "functionCode": "const nome = $items(\"Parse Message\").first().json.nome || \"Cliente\";\nconst telefone = $items(\"Parse Message\").first().json.telefone;\nconst texto = \"Ola \" + nome + \"! \\u{1F372}\\n\\nBem-vindo a *Lanchonete Modelo*!\\n\\nDigite a opcao desejada:\\n\\n1 - *Cardapio*\\n2 - *Status do Pedido*\\n\\nOu simplesmente digite o nome do lanche que deseja!\";\nreturn { texto, telefone };"
+      }
+    },
+    {
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1250, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://evolution-api:8080/message/sendText/multinegocio",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.telefone }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.texto }}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "apikey",
+                  "value": "evolution-api-key-123"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Message": {
+      "main": [
+        [
+          {
+            "node": "Route Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Intent": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cardapio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Buscar Pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Menu Boas-Vindas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cardapio": {
+      "main": [
+        [
+          {
+            "node": "Formatar Cardapio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Cardapio": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Pedidos": {
+      "main": [
+        [
+          {
+            "node": "Formatar Pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Pedidos": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Menu Boas-Vindas": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
