@@ -16,6 +16,7 @@
   "pnpm": {
     "onlyBuiltDependencies": ["bcrypt", "@prisma/client", "@prisma/engines", "prisma", "esbuild", "msgpackr-extract", "nestjs-pino", "vue-demi", "@parcel/watcher", "@nestjs/core"]
   },
+  "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"

@@ -24,3 +24,4 @@ docker/nginx/certs/
 
 #load-test
 load-test/
+.env.*
