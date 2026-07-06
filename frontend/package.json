@@ -13,8 +13,10 @@
   "dependencies": {
     "@phosphor-icons/vue": "^2.2.0",
     "axios": "^1.6.0",
+    "chart.js": "^4.5.1",
     "pinia": "^2.1.0",
     "vue": "^3.4.38",
+    "vue-chartjs": "^5.3.3",
     "vue-router": "^4.3.0",
     "zod": "^3.22.0"
   },

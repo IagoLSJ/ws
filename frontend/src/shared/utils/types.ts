@@ -1,8 +1,7 @@
 export enum RoleNegocio {
   SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
   GERENTE = 'GERENTE',
-  OPERADOR_ESTOQUE = 'OPERADOR_ESTOQUE',
+  OPERADOR = 'OPERADOR',
   VISUALIZADOR = 'VISUALIZADOR',
 }
 
@@ -40,7 +39,7 @@ export interface Negocio {
   bannerUrl?: string;
   ativo: boolean;
   criadoEm: string;
-  _count?: { membros: number; produtos: number; categorias: number };
+  _count?: { membros: number; produtos: number; categorias: number; pedidos: number };
   configuracoes?: ConfiguracaoNegocio;
 }
 
@@ -50,6 +49,9 @@ export interface ConfiguracaoNegocio {
   taxaFrete: number;
   webhookUrl?: string;
   emailAlertas?: string;
+  horarioFuncionamento?: Record<string, any>;
+  endereco?: Record<string, any>;
+  telefoneContato?: string;
 }
 
 export interface MembroNegocio {
@@ -91,19 +93,23 @@ export interface Produto {
   imagens?: ImagemProduto[];
   gruposModificadores?: GrupoModificador[];
   estoqueItem?: EstoqueItem;
+  _count?: { pedidoItens: number };
 }
 
 export function calcularPrecoFinal(produto: { preco: number; tipoDesconto?: string | null; valorDesconto?: number | null }): number {
-  if (!produto.tipoDesconto || !produto.valorDesconto || produto.valorDesconto <= 0) return produto.preco;
-  if (produto.tipoDesconto === 'FIXO') return Math.max(0, produto.preco - produto.valorDesconto);
-  if (produto.tipoDesconto === 'PERCENTUAL') return Math.max(0, produto.preco - (produto.preco * produto.valorDesconto / 100));
-  return produto.preco;
+  const preco = Number(produto.preco);
+  const desconto = Number(produto.valorDesconto || 0);
+  if (!produto.tipoDesconto || !produto.valorDesconto || desconto <= 0) return preco;
+  if (produto.tipoDesconto === 'FIXO') return Math.max(0, preco - desconto);
+  if (produto.tipoDesconto === 'PERCENTUAL') return Math.max(0, preco - (preco * desconto / 100));
+  return preco;
 }
 
 export function formatarDesconto(produto: { preco: number; tipoDesconto?: string | null; valorDesconto?: number | null }): string | null {
-  if (!produto.tipoDesconto || !produto.valorDesconto || produto.valorDesconto <= 0) return null;
-  if (produto.tipoDesconto === 'PERCENTUAL') return `${produto.valorDesconto}% OFF`;
-  if (produto.tipoDesconto === 'FIXO') return `-R$ ${produto.valorDesconto.toFixed(2)}`;
+  const desconto = Number(produto.valorDesconto || 0);
+  if (!produto.tipoDesconto || !produto.valorDesconto || desconto <= 0) return null;
+  if (produto.tipoDesconto === 'PERCENTUAL') return `${desconto}% OFF`;
+  if (produto.tipoDesconto === 'FIXO') return `-R$ ${desconto.toFixed(2)}`;
   return null;
 }
 
@@ -180,6 +186,23 @@ export interface VitrineResponse {
   negocio: Negocio;
   categorias: Categoria[];
   produtos: Produto[];
+}
+
+export interface DashboardResumo {
+  faturamentoHoje: number;
+  faturamentoSemana: number;
+  faturamentoMes: number;
+  pedidosHoje: number;
+  pedidosSemana: number;
+  pedidosMes: number;
+  pedidosPendentes: number;
+  pedidosPorStatus: { status: string; count: number }[];
+  maisVendidos: { produtoNome: string; produtoId: string; totalVendido: number; receita: number }[];
+  totalProdutos: number;
+  totalCategorias: number;
+  totalMembros: number;
+  alertasCount: number;
+  ultimosPedidos: { id: string; status: StatusPedido; total: number; criadoEm: string; taxaFrete: number | null }[];
 }
 
 export enum StatusPedido {

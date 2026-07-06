@@ -17,17 +17,19 @@ export class AuditInterceptor implements NestInterceptor {
         const user = request.user;
         if (!user) return;
 
-        this.prisma.auditLog.create({
-          data: {
-            usuarioId: user.id,
-            negocioId: request.params.businessId || request.params.id,
-            acao: `${method} ${path}`,
-            entidade: context.getClass().name,
-            payload: { body: request.body, params: request.params },
-            ip: request.ip,
-            userAgent: request.headers['user-agent'],
-          },
-        }).catch(() => {});
+        this.prisma.auditLog
+          .create({
+            data: {
+              usuarioId: user.id,
+              negocioId: request.params.businessId || request.params.id,
+              acao: `${method} ${path}`,
+              entidade: context.getClass().name,
+              payload: { body: request.body, params: request.params },
+              ip: request.ip,
+              userAgent: request.headers['user-agent'],
+            },
+          })
+          .catch(() => {});
       }),
     );
   }

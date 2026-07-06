@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { NegociosService } from './negocios.service';
 import { CriarNegocioDto } from './dto/criar-negocio.dto';
 import { AtualizarNegocioDto } from './dto/atualizar-negocio.dto';
+import { AtualizarConfiguracaoDto } from './dto/atualizar-configuracao.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { BusinessAccessGuard } from '../../common/guards/business-access.guard';
@@ -19,15 +21,15 @@ export class NegociosController {
   @Post()
   @Roles(RoleNegocio.SUPER_ADMIN)
   @ApiOperation({ summary: 'Criar negócio' })
-  create(@Body() dto: CriarNegocioDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CriarNegocioDto, @CurrentUser('id') usuarioId: string) {
+    return this.service.create(dto, usuarioId);
   }
 
   @Get()
-  @Roles(RoleNegocio.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Listar negócios' })
-  findAll() {
-    return this.service.findAll();
+  @Roles(RoleNegocio.VISUALIZADOR)
+  @ApiOperation({ summary: 'Listar negócios do usuário' })
+  findAll(@CurrentUser('id') usuarioId: string) {
+    return this.service.findAll(usuarioId);
   }
 
   @Get(':id')
@@ -70,5 +72,12 @@ export class NegociosController {
   @ApiOperation({ summary: 'Remover logo' })
   deleteLogo(@Param('id') id: string) {
     return this.service.deleteLogo(id);
+  }
+
+  @Patch(':id/configuracoes')
+  @Roles(RoleNegocio.GERENTE)
+  @ApiOperation({ summary: 'Atualizar configurações do negócio' })
+  updateConfig(@Param('id') id: string, @Body() dto: AtualizarConfiguracaoDto) {
+    return this.service.updateConfig(id, dto);
   }
 }

@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsArray, Min, MinLength, ArrayMinSize } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  Min,
+  MinLength,
+  ArrayMinSize,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AdicionarAoCarrinhoDto {

@@ -1,4 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { RoleNegocio } from '@prisma/client';
 import { PrismaService } from '../../infra/database/prisma.service';
 
 @Injectable()
@@ -13,11 +14,11 @@ export class BusinessAccessGuard implements CanActivate {
     if (!businessId || !userId) return true;
 
     const isSuperAdmin = await this.prisma.membroNegocio.findFirst({
-      where: { usuarioId: userId, role: 'SUPER_ADMIN', ativo: true },
+      where: { usuarioId: userId, role: RoleNegocio.SUPER_ADMIN, ativo: true },
     });
 
     if (isSuperAdmin) {
-      request.user.role = 'SUPER_ADMIN';
+      request.user.role = RoleNegocio.SUPER_ADMIN;
       request.user.membershipId = isSuperAdmin.id;
       return true;
     }

@@ -6,9 +6,8 @@ import { PrismaService } from '../../infra/database/prisma.service';
 
 const HIERARCHY: Record<RoleNegocio, number> = {
   SUPER_ADMIN: 100,
-  ADMIN: 80,
-  GERENTE: 60,
-  OPERADOR_ESTOQUE: 40,
+  GERENTE: 80,
+  OPERADOR: 60,
   VISUALIZADOR: 20,
 };
 
@@ -36,10 +35,17 @@ export class RolesGuard implements CanActivate {
       return requiredRoles.some((role) => userLevel >= HIERARCHY[role]);
     }
 
-    const isSuper = await this.prisma.membroNegocio.findFirst({
-      where: { usuarioId: user.id, role: RoleNegocio.SUPER_ADMIN, ativo: true },
+    const memberships = await this.prisma.membroNegocio.findMany({
+      where: { usuarioId: user.id, ativo: true },
+      select: { role: true },
     });
-    if (isSuper) return true;
+    const highestLevel = memberships.reduce((max, m) => {
+      const l = HIERARCHY[m.role];
+      return l > max ? l : max;
+    }, 0);
+    if (highestLevel > 0) {
+      return requiredRoles.some((role) => highestLevel >= HIERARCHY[role]);
+    }
 
     return false;
   }

@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { EstoqueService } from './estoque.service';
+import { ListarEstoqueDto } from './dto/listar-estoque.dto';
 import { CriarEstoqueItemDto } from './dto/criar-estoque-item.dto';
 import { AtualizarEstoqueItemDto } from './dto/atualizar-estoque-item.dto';
 import { MovimentarEstoqueDto } from './dto/movimentar-estoque.dto';
@@ -20,31 +21,31 @@ export class EstoqueController {
   constructor(private service: EstoqueService) {}
 
   @Get()
-  @Roles(RoleNegocio.ADMIN, RoleNegocio.GERENTE, RoleNegocio.OPERADOR_ESTOQUE, RoleNegocio.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Listar estoque do negócio' })
-  findAll(@Param('businessId') negocioId: string) {
-    return this.service.findAll(negocioId);
+  @Roles(RoleNegocio.GERENTE, RoleNegocio.OPERADOR, RoleNegocio.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Listar estoque do negócio (paginado)' })
+  findAll(
+    @Param('businessId') negocioId: string,
+    @Query() query: ListarEstoqueDto,
+  ) {
+    return this.service.findAll(negocioId, query);
   }
 
   @Post()
   @Roles(RoleNegocio.GERENTE)
   @ApiOperation({ summary: 'Criar item de estoque (avulso ou vinculado)' })
-  criar(
-    @Param('businessId') negocioId: string,
-    @Body() dto: CriarEstoqueItemDto,
-  ) {
+  criar(@Param('businessId') negocioId: string, @Body() dto: CriarEstoqueItemDto) {
     return this.service.criar(negocioId, dto);
   }
 
   @Get('alertas')
-  @Roles(RoleNegocio.GERENTE)
+   @Roles(RoleNegocio.GERENTE, RoleNegocio.OPERADOR, RoleNegocio.SUPER_ADMIN)
   @ApiOperation({ summary: 'Alertas de ruptura de estoque' })
   alertas(@Param('businessId') negocioId: string) {
     return this.service.alertas(negocioId);
   }
 
   @Post('transferir')
-  @Roles(RoleNegocio.GERENTE)
+   @Roles(RoleNegocio.GERENTE, RoleNegocio.OPERADOR, RoleNegocio.SUPER_ADMIN)
   @ApiOperation({ summary: 'Transferir estoque entre negócios' })
   transferir(
     @Param('businessId') negocioId: string,
@@ -55,7 +56,7 @@ export class EstoqueController {
   }
 
   @Get(':itemId')
-  @Roles(RoleNegocio.OPERADOR_ESTOQUE)
+   @Roles(RoleNegocio.GERENTE, RoleNegocio.OPERADOR, RoleNegocio.SUPER_ADMIN)
   @ApiOperation({ summary: 'Obter item de estoque' })
   findOne(@Param('businessId') negocioId: string, @Param('itemId') itemId: string) {
     return this.service.findOne(negocioId, itemId);
@@ -75,15 +76,12 @@ export class EstoqueController {
   @Delete(':itemId')
   @Roles(RoleNegocio.GERENTE)
   @ApiOperation({ summary: 'Remover item de estoque' })
-  remover(
-    @Param('businessId') negocioId: string,
-    @Param('itemId') itemId: string,
-  ) {
+  remover(@Param('businessId') negocioId: string, @Param('itemId') itemId: string) {
     return this.service.remover(negocioId, itemId);
   }
 
   @Post(':itemId/movimentar')
-  @Roles(RoleNegocio.OPERADOR_ESTOQUE)
+  @Roles(RoleNegocio.OPERADOR)
   @ApiOperation({ summary: 'Lançar movimentação de estoque' })
   movimentar(
     @Param('businessId') negocioId: string,
@@ -95,7 +93,7 @@ export class EstoqueController {
   }
 
   @Get(':itemId/historico')
-  @Roles(RoleNegocio.OPERADOR_ESTOQUE)
+   @Roles(RoleNegocio.GERENTE, RoleNegocio.OPERADOR, RoleNegocio.SUPER_ADMIN)
   @ApiOperation({ summary: 'Histórico de movimentações' })
   historico(@Param('businessId') negocioId: string, @Param('itemId') itemId: string) {
     return this.service.historico(negocioId, itemId);

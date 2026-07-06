@@ -19,13 +19,17 @@ export class CarrinhoService {
   private async obterOuCriarCarrinho(negocioId: string, sessionId: string, usuarioId?: string) {
     let carrinho = await this.prisma.carrinho.findUnique({
       where: { negocioId_sessionId: { negocioId, sessionId } },
-      include: { itens: { include: { produto: true, opcoesSelecionadas: { include: { opcao: true } } } } },
+      include: {
+        itens: { include: { produto: true, opcoesSelecionadas: { include: { opcao: true } } } },
+      },
     });
 
     if (!carrinho) {
       carrinho = await this.prisma.carrinho.create({
         data: { negocioId, sessionId, usuarioId },
-        include: { itens: { include: { produto: true, opcoesSelecionadas: { include: { opcao: true } } } } },
+        include: {
+          itens: { include: { produto: true, opcoesSelecionadas: { include: { opcao: true } } } },
+        },
       });
     }
 
@@ -39,7 +43,14 @@ export class CarrinhoService {
       where: { carrinhoId: carrinho.id },
       include: {
         produto: {
-          select: { id: true, nome: true, preco: true, tipoDesconto: true, valorDesconto: true, imagens: { take: 1, where: { principal: true } } },
+          select: {
+            id: true,
+            nome: true,
+            preco: true,
+            tipoDesconto: true,
+            valorDesconto: true,
+            imagens: { take: 1, where: { principal: true } },
+          },
         },
         opcoesSelecionadas: { include: { opcao: true } },
       },
@@ -47,14 +58,22 @@ export class CarrinhoService {
 
     const total = itens.reduce((acc, item) => {
       const precoBase = calcularPrecoFinal(item.produto);
-      const extraOpcoes = item.opcoesSelecionadas.reduce((s, o) => s + Number(o.opcao.precoExtra), 0);
+      const extraOpcoes = item.opcoesSelecionadas.reduce(
+        (s, o) => s + Number(o.opcao.precoExtra),
+        0,
+      );
       return acc + (precoBase + extraOpcoes) * item.quantidade;
     }, 0);
 
     return { itens, total: Math.round(total * 100) / 100 };
   }
 
-  async adicionar(slug: string, sessionId: string, dto: AdicionarAoCarrinhoDto, usuarioId?: string) {
+  async adicionar(
+    slug: string,
+    sessionId: string,
+    dto: AdicionarAoCarrinhoDto,
+    usuarioId?: string,
+  ) {
     const negocioId = await this.resolveNegocioId(slug);
 
     const produto = await this.prisma.produto.findFirst({
@@ -85,7 +104,14 @@ export class CarrinhoService {
       },
       include: {
         produto: {
-          select: { id: true, nome: true, preco: true, tipoDesconto: true, valorDesconto: true, imagens: { take: 1, where: { principal: true } } },
+          select: {
+            id: true,
+            nome: true,
+            preco: true,
+            tipoDesconto: true,
+            valorDesconto: true,
+            imagens: { take: 1, where: { principal: true } },
+          },
         },
         opcoesSelecionadas: { include: { opcao: true } },
       },

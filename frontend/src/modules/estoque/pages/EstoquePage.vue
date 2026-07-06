@@ -1,50 +1,64 @@
 <template>
   <div>
-    <div class="page-header">
-      <div class="page-header__left">
-        <h1>Estoque</h1>
-        <span class="header-count">{{ estoque.length }} itens</span>
-      </div>
-      <div class="header-actions">
-        <AppButton v-if="can(RoleNegocio.GERENTE)" variant="ghost" @click="showAlertas = !showAlertas">
+    <PageHeader :title="showAlertas ? 'Alertas de Estoque' : 'Estoque'" :subtitle="!showAlertas ? `${estoque.length} itens` : undefined">
+      <template #actions>
+        <AppButton v-if="can(RoleNegocio.GERENTE)" variant="ghost" size="sm" @click="showAlertas = !showAlertas">
           {{ showAlertas ? 'Ver Estoque' : 'Alertas' }}
         </AppButton>
-        <AppButton v-if="can(RoleNegocio.GERENTE)" variant="secondary" @click="exportarRelatorio">
+        <AppButton v-if="can(RoleNegocio.GERENTE) && !showAlertas" variant="secondary" size="sm" @click="exportarRelatorio">
           Exportar
         </AppButton>
-        <AppButton v-if="can(RoleNegocio.GERENTE)" variant="secondary" @click="openTransferir">
+        <AppButton v-if="can(RoleNegocio.GERENTE) && !showAlertas" variant="secondary" size="sm" @click="openTransferir">
           Transferir
         </AppButton>
-        <AppButton v-if="can(RoleNegocio.GERENTE)" @click="openCriar">
+        <AppButton v-if="can(RoleNegocio.GERENTE) && !showAlertas && isBusinessSeleccted" size="sm" @click="openCriar">
           Novo Item
         </AppButton>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <div v-if="loading" class="loading">Carregando...</div>
 
     <!-- Alertas -->
     <template v-else-if="showAlertas">
-      <AppCard class="section">
-        <h2>Alertas de Ruptura</h2>
+      <SectionCard title="Alertas de Ruptura">
         <div v-if="!alertas.length" class="empty">Nenhum alerta.</div>
         <div v-for="item in alertas" :key="item.id" class="alerta-item">
           <strong>{{ item.nome }}</strong>
           <span class="text-danger">Estoque: {{ item.quantidadeAtual }} {{ item.unidade }}</span>
         </div>
-      </AppCard>
+      </SectionCard>
     </template>
 
     <!-- Tabela -->
     <template v-else>
-      <div class="table-toolbar">
+      <!-- Summary Cards -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-value">{{ estoque.length }}</span>
+          <span class="summary-label">Total Itens</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-value">{{ estoque.reduce((a, e) => a + e.quantidadeAtual, 0) }}</span>
+          <span class="summary-label">Total em Estoque</span>
+        </div>
+        <div class="summary-card" :class="{ 'summary-card--danger': criticos > 0 }">
+          <span class="summary-value">{{ criticos }}</span>
+          <span class="summary-label">Itens Críticos</span>
+        </div>
+        <div class="summary-card" :class="{ 'summary-card--danger': zerados > 0 }">
+          <span class="summary-value">{{ zerados }}</span>
+          <span class="summary-label">Zerados</span>
+        </div>
+      </div>
+      <FilterBar>
         <div class="search-wrapper">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
           <input v-model="estoqueBusca" placeholder="Buscar no estoque..." class="search-input" />
         </div>
-      </div>
+      </FilterBar>
 
       <AppTable
         :columns="columns"
@@ -77,7 +91,7 @@
             Editar
           </AppButton>
           <AppButton
-            v-if="can(RoleNegocio.OPERADOR_ESTOQUE)"
+            v-if="can(RoleNegocio.OPERADOR)"
             size="sm"
             variant="secondary"
             @click="openMovimentar(row as unknown as EstoqueItem)"
@@ -175,17 +189,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/shared/utils/api';
 import { usePermissions } from '@/shared/composables/usePermissions';
-import { usePagination } from '@/shared/composables/usePagination';
 import { useBusinessStore } from '@/app/stores/business.store';
 import { RoleNegocio, TipoMovimentacao, type EstoqueItem } from '@/shared/utils/types';
 import { useUiStore } from '@/app/stores/ui.store';
+import PageHeader from '@/shared/components/layout/PageHeader.vue';
+import FilterBar from '@/shared/components/layout/FilterBar.vue';
+import SectionCard from '@/shared/components/layout/SectionCard.vue';
 import AppTable from '@/shared/components/ui/AppTable.vue';
 import AppButton from '@/shared/components/ui/AppButton.vue';
-import AppCard from '@/shared/components/ui/AppCard.vue';
 import AppModal from '@/shared/components/ui/AppModal.vue';
 import AppInput from '@/shared/components/ui/AppInput.vue';
 import AppSelect from '@/shared/components/ui/AppSelect.vue';
@@ -196,20 +211,31 @@ const router = useRouter();
 const { can } = usePermissions();
 const ui = useUiStore();
 const businessStore = useBusinessStore();
-
+const isBusinessSeleccted = computed(() => !!businessStore.businessId());
 const estoque = ref<EstoqueItem[]>([]);
 const estoqueBusca = ref('');
 const alertas = ref<EstoqueItem[]>([]);
 const negocios = ref<{ id: string; nome: string }[]>([]);
 const loading = ref(true);
 const showAlertas = ref(false);
+const page = ref(1);
+const total = ref(0);
+const totalPages = ref(1);
 
-const estoqueFiltrado = computed(() => {
-  if (!estoqueBusca.value) return estoque.value;
-  const q = estoqueBusca.value.toLowerCase();
-  return estoque.value.filter((e) => e.nome.toLowerCase().includes(q));
+const criticos = computed(() => estoque.value.filter((e) => e.quantidadeAtual > 0 && e.quantidadeAtual <= e.estoqueMinimo).length);
+const zerados = computed(() => estoque.value.filter((e) => e.quantidadeAtual <= 0).length);
+
+const paginatedItems = computed(() => estoque.value);
+console.log(isBusinessSeleccted.value, 'isBusinessSeleccted');
+function setPage(p: number) {
+  page.value = p;
+  fetchData();
+}
+
+watch(estoqueBusca, () => {
+  page.value = 1;
+  fetchData();
 });
-const { page, totalPages, paginatedItems, setPage } = usePagination(estoqueFiltrado, 10);
 
 // --- Criar / Editar ---
 const showForm = ref(false);
@@ -363,16 +389,9 @@ async function handleTransferir() {
   transfLoading.value = true;
   try {
     const bid = businessStore.businessId();
-    const itemOrigem = estoque.value.find((e) => e.id === transfForm.value.itemOrigemId);
-    if (!itemOrigem || !itemOrigem.produtoId) {
-      transfError.value = 'Apenas itens vinculados a produtos do catálogo podem ser transferidos.';
-      transfLoading.value = false;
-      return;
-    }
     await api.post(`/negocios/${bid}/estoque/transferir`, {
       itemOrigemId: transfForm.value.itemOrigemId,
       negocioDestinoId: transfForm.value.negocioDestinoId,
-      produtoDestinoId: itemOrigem.produtoId,
       quantidade: parseInt(transfForm.value.quantidade),
       motivo: transfForm.value.motivo || undefined,
     });
@@ -418,8 +437,6 @@ const tipoOptions = [
   { value: TipoMovimentacao.SAIDA_VENDA, label: 'Saída (Venda)' },
   { value: TipoMovimentacao.SAIDA_AJUSTE, label: 'Saída (Ajuste)' },
   { value: TipoMovimentacao.PERDA, label: 'Perda' },
-  { value: TipoMovimentacao.TRANSFERENCIA_ENTRADA, label: 'Transferência (Entrada)' },
-  { value: TipoMovimentacao.TRANSFERENCIA_SAIDA, label: 'Transferência (Saída)' },
   { value: TipoMovimentacao.INVENTARIO, label: 'Inventário' },
 ];
 
@@ -427,12 +444,17 @@ async function fetchData() {
   loading.value = true;
   try {
     const bid = businessStore.businessId();
+    const params: Record<string, any> = { page: page.value, limit: 20 };
+    if (estoqueBusca.value) params.search = estoqueBusca.value;
+
     const [estqRes, alertRes, negRes] = await Promise.all([
-      api.get(`/negocios/${bid}/estoque`),
+      api.get(`/negocios/${bid}/estoque`, { params }),
       api.get(`/negocios/${bid}/estoque/alertas`),
       api.get('/negocios'),
     ]);
-    estoque.value = estqRes.data;
+    estoque.value = estqRes.data.data;
+    total.value = estqRes.data.total;
+    totalPages.value = estqRes.data.totalPages;
     alertas.value = alertRes.data;
     negocios.value = negRes.data;
   } finally {
@@ -444,29 +466,29 @@ onMounted(fetchData);
 </script>
 
 <style scoped>
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem; }
-.page-header__left { display: flex; align-items: baseline; gap: 0.75rem; }
-.header-count { font-size: 0.8125rem; color: var(--color-text-muted); }
-.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.loading { color: var(--color-text-muted); text-align: center; padding: 2rem; }
-.text-muted { color: var(--color-text-muted); font-size: 0.8125rem; }
+.loading { color: var(--color-text-3); text-align: center; padding: 2rem; }
+.text-muted { color: var(--color-text-3); font-size: 0.8125rem; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media (max-width: 768px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+.summary-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; text-align: center; }
+.summary-value { display: block; font-size: 1.375rem; font-weight: 700; }
+.summary-label { font-size: 0.6875rem; color: var(--color-text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.125rem; }
+.summary-card--danger { border-color: var(--color-danger); }
+.summary-card--danger .summary-value { color: var(--color-danger); }
 .text-danger { color: var(--color-danger); font-weight: 600; }
-.section { margin-bottom: 1.5rem; }
-.section h2 { font-size: 1rem; margin-bottom: 1rem; }
-.empty { color: var(--color-text-muted); font-size: 0.875rem; padding: 1rem 0; }
-.alerta-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border-light); }
+.empty { color: var(--color-text-3); font-size: 0.875rem; padding: 1rem 0; }
+.alerta-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); }
 .error-msg { font-size: 0.8125rem; color: var(--color-danger); }
 .modal-footer-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
 .item-cell { display: flex; align-items: center; gap: 0.5rem; }
-.table-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-.search-wrapper { display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-secondary); flex: 1; max-width: 320px; }
-.search-wrapper:focus-within { border-color: var(--color-primary); }
-.search-icon { flex-shrink: 0; color: var(--color-text-muted); }
-.search-input { border: none; outline: none; font-size: 0.8125rem; width: 100%; background: transparent; color: var(--color-text-primary); }
-.pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light); }
-.page-btn { padding: 0.375rem 0.75rem; font-size: 0.8125rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-secondary); color: var(--color-text-secondary); cursor: pointer; transition: all var(--transition-fast); }
-.page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.search-wrapper { display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); flex: 1; max-width: 320px; }
+.search-wrapper:focus-within { border-color: var(--color-brand); }
+.search-icon { flex-shrink: 0; color: var(--color-text-3); }
+.search-input { border: none; outline: none; font-size: 0.8125rem; width: 100%; background: transparent; color: var(--color-text); }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+.page-btn { padding: 0.375rem 0.75rem; font-size: 0.8125rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-2); cursor: pointer; transition: all var(--transition-fast); }
+.page-btn:hover:not(:disabled) { border-color: var(--color-brand); color: var(--color-brand); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.page-info { font-size: 0.8125rem; color: var(--color-text-muted); }
+.page-info { font-size: 0.8125rem; color: var(--color-text-3); }
 </style>

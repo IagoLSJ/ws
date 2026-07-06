@@ -15,7 +15,7 @@ defineEmits<{ click: [] }>();
 <style scoped>
 .app-card {
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);

@@ -69,7 +69,7 @@ import { useBusinessStore } from '@/app/stores/business.store';
 import { useAuthStore } from '@/app/stores/auth.store';
 import { RoleNegocio } from '@/shared/utils/types';
 import {
-  PhHouse, PhBuildings, PhBookOpen, PhPackage, PhUsers, PhReceipt, PhTag, PhCaretDown, PhCheck, PhShoppingCart,
+  PhHouse, PhBuildings, PhBookOpen, PhPackage, PhUsers, PhReceipt, PhTag, PhCaretDown, PhCheck, PhShoppingCart, PhChartLine, PhClipboardText,
 } from '@phosphor-icons/vue';
 
 defineProps<{ open: boolean }>();
@@ -124,9 +124,8 @@ const userRole = computed(() => {
   if (!membro) return '';
   const labels: Record<string, string> = {
     SUPER_ADMIN: 'Super Admin',
-    ADMIN: 'Admin',
     GERENTE: 'Gerente',
-    OPERADOR_ESTOQUE: 'Operador',
+    OPERADOR: 'Operador',
     VISUALIZADOR: 'Visualizador',
   };
   return labels[membro.role] || membro.role;
@@ -154,6 +153,7 @@ const sections = computed<MenuSection[]>(() => {
       { to: '/categorias', icon: PhTag, label: 'Categorias' },
       { to: '/pedidos', icon: PhReceipt, label: 'Pedidos' },
       { to: '/estoque', icon: PhPackage, label: 'Estoque' },
+      
     ],
   };
 
@@ -165,6 +165,8 @@ const sections = computed<MenuSection[]>(() => {
       items: [
         { to: '/negocios', icon: PhBuildings, label: 'Negócios' },
         { to: '/usuarios', icon: PhUsers, label: 'Usuários' },
+        { to: '/relatorios', icon: PhChartLine, label: 'Relatórios' },
+      { to: '/auditoria', icon: PhClipboardText, label: 'Auditoria' },
       ],
     });
   }
@@ -186,7 +188,7 @@ function isActive(to: string) {
   bottom: 0;
   width: var(--sidebar-width);
   background: var(--color-secondary);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.92);
   display: flex;
   flex-direction: column;
   transition: width var(--transition-base);
@@ -240,7 +242,7 @@ function isActive(to: string) {
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--radius-md);
   background: rgba(255,255,255,0.06);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.92);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-family: inherit;
@@ -275,8 +277,8 @@ function isActive(to: string) {
   top: calc(100% - 0.25rem);
   left: 0.75rem;
   right: 0.75rem;
-  background: #1e1e2e;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #141622;
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--radius-md);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   z-index: 200;
@@ -291,7 +293,7 @@ function isActive(to: string) {
   padding: 0.625rem 0.75rem;
   border: none;
   background: transparent;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.84);
   cursor: pointer;
   font-family: inherit;
   font-size: 0.8125rem;
@@ -299,12 +301,12 @@ function isActive(to: string) {
   transition: all var(--transition-fast);
 }
 .sidebar__business-option:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.12);
   color: #fff;
 }
 .sidebar__business-option--active {
   color: #fff;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.14);
 }
 .sidebar__business-option-name {
   overflow: hidden;
@@ -337,7 +339,7 @@ function isActive(to: string) {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.48);
   padding: 1rem 1.5rem 0.375rem;
   white-space: nowrap;
 }
@@ -349,7 +351,7 @@ function isActive(to: string) {
   padding: 0.625rem 1.25rem;
   margin: 0.125rem 0.5rem;
   border-radius: var(--radius-md);
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.76);
   text-decoration: none;
   transition: all var(--transition-fast);
   white-space: nowrap;
@@ -357,11 +359,11 @@ function isActive(to: string) {
 }
 .sidebar__link:hover {
   color: #fff;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.1);
 }
 .sidebar__link--active {
   color: #fff;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.16);
 }
 .sidebar__link--active::before {
   content: '';
@@ -425,6 +427,6 @@ function isActive(to: string) {
 }
 .sidebar__user-role {
   font-size: 0.6875rem;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.58);
 }
 </style>

@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 defineProps<{
-  modelValue: string;
+  modelValue: string | number;
   label?: string;
   type?: string;
   placeholder?: string;

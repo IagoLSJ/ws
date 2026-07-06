@@ -38,7 +38,7 @@
               label="Categoria"
               :options="categoriaOptions"
             />
-            <AppSelect v-model="form.status" label="Status" :options="statusOptions" />
+            <AppSelect v-if="isEdit" v-model="form.status" label="Status" :options="statusOptions" />
           </div>
           <label class="checkbox-label">
             <input v-model="form.controlaEstoque" type="checkbox" />
@@ -47,28 +47,32 @@
         </div>
 
         <div class="form-section">
-          <h3>Imagens</h3>
+          <h3>Imagem</h3>
           <div class="image-grid">
-            <div v-for="img in imagens" :key="img.id" class="image-card">
-              <img :src="img.url" :alt="'Imagem'" />
+            <div v-if="imagemAtual" class="image-card">
+              <img :src="imagemAtual.url" :alt="'Imagem'" />
               <AppButton
                 size="sm"
                 variant="danger"
                 class="image-delete-btn"
-                @click="confirmarExclusaoImagem(img)"
+                @click="confirmarExclusaoImagem(imagemAtual)"
               >
                 &times;
               </AppButton>
             </div>
+            <div v-else-if="pendingPreview" class="image-card">
+              <img :src="pendingPreview" alt="Preview" />
+            </div>
           </div>
+          <p v-if="uploadError" class="error-msg">{{ uploadError }}</p>
           <AppButton
-            v-if="isEdit"
+            type="button"
             size="sm"
             variant="secondary"
             :loading="uploading"
             @click="selecionarUpload"
           >
-            Upload Imagem
+            {{ imagemAtual ? 'Trocar Imagem' : pendingFile ? 'Imagem selecionada' : 'Upload Imagem' }}
           </AppButton>
           <input
             ref="fileInput"
@@ -84,7 +88,7 @@
           <div v-for="(g, gi) in form.gruposModificadores" :key="gi" class="grupo-card">
             <div class="grupo-header">
               <AppInput v-model="g.nome" label="Nome do grupo" />
-              <AppButton size="sm" variant="danger" @click="form.gruposModificadores.splice(gi, 1)">
+              <AppButton type="button" size="sm" variant="danger" @click="form.gruposModificadores.splice(gi, 1)">
                 Remover
               </AppButton>
             </div>
@@ -100,16 +104,16 @@
               <div v-for="(o, oi) in g.opcoes" :key="oi" class="opcao-row">
                 <AppInput v-model="o.nome" placeholder="Opção" />
                 <AppInput v-model="o.precoExtra" type="number" step="0.01" min="0" placeholder="Preço extra" />
-                <AppButton size="sm" variant="ghost" @click="g.opcoes.splice(oi, 1)">
+                <AppButton type="button" size="sm" variant="ghost" @click="g.opcoes.splice(oi, 1)">
                   &times;
                 </AppButton>
               </div>
-              <AppButton size="sm" variant="ghost" @click="g.opcoes.push({ nome: '', precoExtra: '0', ativo: true, ordem: g.opcoes.length })">
-                + Opção
-              </AppButton>
+               <AppButton type="button" size="sm" variant="ghost" @click="g.opcoes.push({ nome: '', precoExtra: '0', ordem: g.opcoes.length })">
+                  + Opção
+                </AppButton>
             </div>
           </div>
-          <AppButton size="sm" variant="secondary" @click="addGrupo">
+          <AppButton type="button" size="sm" variant="secondary" @click="addGrupo">
             + Grupo Modificador
           </AppButton>
         </div>
@@ -128,7 +132,7 @@
     />
 
         <div class="form-actions">
-          <AppButton variant="ghost" @click="router.back()">Cancelar</AppButton>
+          <AppButton type="button" variant="ghost" @click="router.back()">Cancelar</AppButton>
           <AppButton type="submit" :loading="saving">
             {{ isEdit ? 'Salvar' : 'Criar' }}
           </AppButton>
@@ -165,8 +169,12 @@ const imagens = ref<ImagemProduto[]>([]);
 const showConfirmImg = ref(false);
 const imagemParaRemover = ref<ImagemProduto | null>(null);
 const removendoImg = ref(false);
-const { uploading, uploadImage } = useUpload();
+const { uploading, uploadError, uploadImage } = useUpload();
 const fileInput = ref<HTMLInputElement | null>(null);
+const pendingFile = ref<File | null>(null);
+const pendingPreview = ref<string | null>(null);
+
+const imagemAtual = computed(() => imagens.value[0] ?? null);
 
 const form = reactive({
   nome: '',
@@ -220,20 +228,19 @@ function addGrupo() {
 }
 
 function parseGruposPayload() {
-  return form.gruposModificadores.map((g: any) => ({
-    nome: g.nome,
-    obrigatorio: g.obrigatorio ?? false,
-    minSelecao: g.minSelecao ? parseInt(g.minSelecao) : 0,
-    maxSelecao: g.maxSelecao ? parseInt(g.maxSelecao) : 1,
-    ordem: g.ordem ?? 0,
-    opcoes: g.opcoes.map((o: any) => ({
-      nome: o.nome,
-      precoExtra: o.precoExtra ? parseFloat(o.precoExtra) : 0,
-      ativo: o.ativo ?? true,
-      ordem: o.ordem ?? 0,
-    })),
-  }));
-}
+    return form.gruposModificadores.map((g: any) => ({
+      nome: g.nome,
+      obrigatorio: g.obrigatorio ?? false,
+      minSelecao: g.minSelecao ? parseInt(g.minSelecao) : 0,
+      maxSelecao: g.maxSelecao ? parseInt(g.maxSelecao) : 1,
+      ordem: g.ordem ?? 0,
+      opcoes: g.opcoes.map((o: any) => ({
+        nome: o.nome,
+        precoExtra: o.precoExtra ? parseFloat(o.precoExtra) : 0,
+        ordem: o.ordem ?? 0,
+      })),
+    }));
+  }
 
 async function handleSubmit() {
   errors.nome = '';
@@ -247,21 +254,40 @@ async function handleSubmit() {
   try {
       const bid = businessStore.businessId();
       const payload = {
-        ...form,
+        nome: form.nome,
+        descricao: form.descricao,
         preco: parseFloat(form.preco),
+        categoriaId: form.categoriaId || undefined,
         tipoDesconto: form.tipoDesconto || undefined,
         valorDesconto: form.valorDesconto ? parseFloat(form.valorDesconto) : undefined,
+        sku: form.sku || undefined,
+        destaque: undefined,
+        ordem: undefined,
+        controlaEstoque: form.controlaEstoque,
+        ...(isEdit.value ? { status: form.status } : {}),
         gruposModificadores: parseGruposPayload(),
       };
 
       if (isEdit.value) {
         await api.patch(`/negocios/${bid}/produtos/${route.params.id}`, payload);
         ui.addToast('Produto atualizado!', 'success');
+        router.push('/catalogo');
       } else {
-        await api.post(`/negocios/${bid}/produtos`, payload);
-        ui.addToast('Produto criado!', 'success');
+        const { data: novo } = await api.post<Produto>(`/negocios/${bid}/produtos`, payload);
+        if (pendingFile.value) {
+          const key = await uploadImage(bid, novo.id, pendingFile.value);
+          if (key) {
+            ui.addToast('Produto criado com imagem!', 'success');
+          } else if (!uploadError.value) {
+            ui.addToast('Produto criado, mas erro ao enviar imagem.', 'warning');
+          }
+          pendingFile.value = null;
+          pendingPreview.value = null;
+        } else {
+          ui.addToast('Produto criado!', 'success');
+        }
+        router.push('/catalogo');
       }
-      router.push('/catalogo');
   } catch (err: any) {
     const msg = err.response?.data?.message || 'Erro ao salvar';
     errors.geral = Array.isArray(msg) ? msg.join(', ') : msg;
@@ -278,13 +304,22 @@ async function handleUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  const produtoId = route.params.id;
+  if (!produtoId) {
+    pendingFile.value = file;
+    pendingPreview.value = URL.createObjectURL(file);
+    input.value = '';
+    return;
+  }
   const bid = businessStore.businessId();
-  const key = await uploadImage(bid, route.params.id as string, file);
+  const key = await uploadImage(bid, produtoId as string, file);
   if (key) {
     ui.addToast('Imagem enviada!', 'success');
-    const { data: prod } = await api.get<Produto>(`/negocios/${bid}/produtos/${route.params.id}`);
+    pendingFile.value = null;
+    pendingPreview.value = null;
+    const { data: prod } = await api.get<Produto>(`/negocios/${bid}/produtos/${produtoId}`);
     imagens.value = prod.imagens ?? [];
-  } else {
+  } else if (!uploadError.value) {
     ui.addToast('Erro ao enviar imagem.', 'error');
   }
   input.value = '';
@@ -307,6 +342,7 @@ async function handleDeleteImagem() {
     imagens.value = imagens.value.filter((i) => i.id !== imagemParaRemover.value!.id);
     showConfirmImg.value = false;
     imagemParaRemover.value = null;
+    uploadError.value = '';
   } catch {
     ui.addToast('Erro ao remover imagem.', 'error');
   } finally {

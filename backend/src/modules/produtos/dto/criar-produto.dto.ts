@@ -1,7 +1,15 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsEnum, Min, ValidateNested, IsArray, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  Min,
+  ValidateNested,
+  IsArray,
+  MinLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProdutoStatus } from '@prisma/client';
 
 class OpcaoModificadorDto {
   @ApiProperty({ example: 'Médio' })
@@ -62,7 +70,7 @@ export class CriarProdutoDto {
   @IsString()
   descricao?: string;
 
-  @ApiProperty({ example: 25.90 })
+  @ApiProperty({ example: 25.9 })
   @IsNumber()
   @Min(0)
   preco!: number;
@@ -87,11 +95,6 @@ export class CriarProdutoDto {
   @IsOptional()
   @IsString()
   sku?: string;
-
-  @ApiPropertyOptional({ enum: ProdutoStatus })
-  @IsOptional()
-  @IsEnum(ProdutoStatus)
-  status?: ProdutoStatus;
 
   @ApiPropertyOptional()
   @IsOptional()

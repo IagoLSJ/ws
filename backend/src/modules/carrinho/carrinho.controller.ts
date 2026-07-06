@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CarrinhoService } from './carrinho.service';
 import { AdicionarAoCarrinhoDto } from './dto/adicionar-ao-carrinho.dto';

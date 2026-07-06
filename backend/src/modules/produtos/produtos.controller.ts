@@ -62,8 +62,9 @@ export class ProdutosController {
     @Param('businessId') negocioId: string,
     @Param('prodId') produtoId: string,
     @Body('fileName') fileName: string,
+    @Body('fileSize') fileSize?: number,
   ) {
-    return this.service.requestUploadUrl(negocioId, produtoId, fileName);
+    return this.service.requestUploadUrl(negocioId, produtoId, fileName, fileSize);
   }
 
   @Post(':prodId/imagens/confirmar')

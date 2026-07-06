@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../infra/database/prisma.service';
+import { ProdutoStatus } from '@prisma/client';
 import { CriarEstoqueItemDto } from './dto/criar-estoque-item.dto';
 import { AtualizarEstoqueItemDto } from './dto/atualizar-estoque-item.dto';
 import { MovimentarEstoqueDto } from './dto/movimentar-estoque.dto';
@@ -29,19 +30,59 @@ export class EstoqueService {
     };
   }
 
-  async findAll(negocioId: string) {
-    const items = await this.prisma.estoqueItem.findMany({
-      where: { negocioId },
-      include: this.include,
-      orderBy: { criadoEm: 'desc' },
-    });
-    return items.map(this.mapItem);
+  async findAll(negocioId: string, query?: { page?: number; limit?: number; search?: string }) {
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const where: any = { negocioId };
+    if (query?.search) {
+      where.OR = [
+        { nome: { contains: query.search, mode: 'insensitive' } },
+        { sku: { contains: query.search, mode: 'insensitive' } },
+        { produto: { nome: { contains: query.search, mode: 'insensitive' } } },
+        { produto: { sku: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.estoqueItem.findMany({
+        where,
+        include: this.include,
+        orderBy: { criadoEm: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.estoqueItem.count({ where }),
+    ]);
+
+    return {
+      data: items.map(this.mapItem),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async criar(negocioId: string, dto: CriarEstoqueItemDto) {
     if (!dto.produtoId && !dto.nome) {
       throw new BadRequestException('Informe um produtoId ou um nome para o item avulso');
     }
+
+    if (dto.produtoId) {
+      const existente = await this.prisma.estoqueItem.findUnique({
+        where: { produtoId: dto.produtoId },
+      });
+      if (existente) {
+        throw new BadRequestException('Este produto já possui um item de estoque vinculado');
+      }
+    }
+
+    const config = await this.prisma.configuracaoNegocio.findUnique({
+      where: { negocioId },
+    });
+    const estoqueMinimoPadrao = config?.estoqueMinimoPadrao ?? 5;
 
     const item = await this.prisma.estoqueItem.create({
       data: {
@@ -50,7 +91,7 @@ export class EstoqueService {
         nome: dto.nome ?? null,
         sku: dto.sku ?? null,
         quantidadeAtual: dto.quantidadeAtual ?? 0,
-        estoqueMinimo: dto.estoqueMinimo ?? 5,
+        estoqueMinimo: dto.estoqueMinimo ?? estoqueMinimoPadrao,
         unidade: dto.unidade ?? 'un',
       },
       include: this.include,
@@ -84,7 +125,12 @@ export class EstoqueService {
     return { message: 'Item removido' };
   }
 
-  async movimentar(negocioId: string, itemId: string, dto: MovimentarEstoqueDto, usuarioId?: string) {
+  async movimentar(
+    negocioId: string,
+    itemId: string,
+    dto: MovimentarEstoqueDto,
+    usuarioId?: string,
+  ) {
     const item = await this.findOne(negocioId, itemId);
 
     const tiposEntrada = ['ENTRADA', 'TRANSFERENCIA_ENTRADA', 'INVENTARIO'];
@@ -118,6 +164,15 @@ export class EstoqueService {
         data: { quantidadeAtual: quantidadeApos },
       }),
     ]);
+
+    if (item.produtoId) {
+      const novoStatus =
+        quantidadeApos <= 0 ? ProdutoStatus.ESGOTADO : ProdutoStatus.ATIVO;
+      await this.prisma.produto.updateMany({
+        where: { id: item.produtoId, status: { not: novoStatus } },
+        data: { status: novoStatus },
+      });
+    }
 
     if (!isEntrada && quantidadeApos <= item.estoqueMinimo) {
       await this.alertasQueue.add('estoque-ruptura', {
@@ -155,18 +210,45 @@ export class EstoqueService {
     });
     if (!destinoNegocio) throw new NotFoundException('Negócio de destino não encontrado');
 
-    const itemDestino = await this.prisma.estoqueItem.findUnique({
-      where: { produtoId: dto.produtoDestinoId },
-    });
-    if (!itemDestino) throw new NotFoundException('Produto de destino não encontrado no estoque');
+    let itemDestino;
+
+    if (itemOrigem.produtoId) {
+      itemDestino = await this.prisma.estoqueItem.findFirst({
+        where: { produtoId: itemOrigem.produtoId, negocioId: dto.negocioDestinoId },
+      });
+      if (!itemDestino) throw new NotFoundException('Produto não encontrado no estoque de destino');
+    } else {
+      itemDestino = await this.prisma.estoqueItem.findFirst({
+        where: { nome: itemOrigem.nome, negocioId: dto.negocioDestinoId, produtoId: null },
+      });
+
+      if (!itemDestino) {
+        itemDestino = await this.prisma.estoqueItem.create({
+          data: {
+            negocioId: dto.negocioDestinoId,
+            nome: itemOrigem.nome,
+            sku: itemOrigem.sku,
+            unidade: itemOrigem.unidade,
+            estoqueMinimo: itemOrigem.estoqueMinimo,
+            quantidadeAtual: 0,
+          },
+        });
+      }
+    }
+
+    if (itemOrigem.id === itemDestino.id) {
+      throw new BadRequestException('Origem e destino devem ser diferentes');
+    }
 
     const quantidadeAntesOrigem = itemOrigem.quantidadeAtual;
     const quantidadeAntesDestino = itemDestino.quantidadeAtual;
 
+    const novaQtdOrigem = quantidadeAntesOrigem - dto.quantidade;
+
     await this.prisma.$transaction([
       this.prisma.estoqueItem.update({
         where: { id: itemOrigem.id },
-        data: { quantidadeAtual: quantidadeAntesOrigem - dto.quantidade },
+        data: { quantidadeAtual: novaQtdOrigem },
       }),
       this.prisma.estoqueItem.update({
         where: { id: itemDestino.id },
@@ -180,7 +262,7 @@ export class EstoqueService {
           tipo: 'TRANSFERENCIA_SAIDA',
           quantidade: dto.quantidade,
           quantidadeAntes: quantidadeAntesOrigem,
-          quantidadeApos: quantidadeAntesOrigem - dto.quantidade,
+          quantidadeApos: novaQtdOrigem,
           motivo: dto.motivo || 'Transferência entre negócios',
         },
       }),
@@ -188,7 +270,7 @@ export class EstoqueService {
         data: {
           negocioId: dto.negocioDestinoId,
           estoqueItemId: itemDestino.id,
-          usuarioId: usuarioId ?? null,
+          usuarioId: null,
           tipo: 'TRANSFERENCIA_ENTRADA',
           quantidade: dto.quantidade,
           quantidadeAntes: quantidadeAntesDestino,
@@ -197,6 +279,23 @@ export class EstoqueService {
         },
       }),
     ]);
+
+    if (novaQtdOrigem <= 0 && itemOrigem.produtoId) {
+      await this.prisma.produto.updateMany({
+        where: { id: itemOrigem.produtoId, status: { not: ProdutoStatus.ESGOTADO } },
+        data: { status: ProdutoStatus.ESGOTADO },
+      });
+    }
+
+    if (novaQtdOrigem <= itemOrigem.estoqueMinimo) {
+      await this.alertasQueue.add('estoque-ruptura', {
+        negocioId,
+        produtoId: itemOrigem.produtoId,
+        produtoNome: itemOrigem.nome,
+        quantidadeAtual: novaQtdOrigem,
+        estoqueMinimo: itemOrigem.estoqueMinimo,
+      });
+    }
 
     return { message: 'Transferência realizada com sucesso' };
   }

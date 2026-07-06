@@ -9,9 +9,8 @@ datasource db {
 
 enum RoleNegocio {
   SUPER_ADMIN
-  ADMIN
   GERENTE
-  OPERADOR_ESTOQUE
+  OPERADOR
   VISUALIZADOR
 }
 
@@ -116,13 +115,16 @@ model Negocio {
 }
 
 model ConfiguracaoNegocio {
-  id                    String   @id @default(uuid())
-  negocioId             String   @unique
-  controleEstoqueAtivo  Boolean  @default(true)
-  estoqueMinimoPadrao   Int      @default(5)
-  taxaFrete             Decimal  @default(0) @db.Decimal(10, 2)
+  id                    String    @id @default(uuid())
+  negocioId             String    @unique
+  controleEstoqueAtivo  Boolean   @default(true)
+  estoqueMinimoPadrao   Int       @default(5)
+  taxaFrete             Decimal   @default(0) @db.Decimal(10, 2)
   webhookUrl            String?
   emailAlertas          String?
+  horarioFuncionamento  Json?
+  endereco              Json?
+  telefoneContato       String?
 
   negocio Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
 

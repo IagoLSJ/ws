@@ -37,10 +37,7 @@ export class PedidosController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Atualizar status do pedido' })
-  atualizarStatus(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body('status') status: StatusPedido,
-  ) {
+  atualizarStatus(@Param('id', ParseUUIDPipe) id: string, @Body('status') status: StatusPedido) {
     return this.service.atualizarStatus(id, status);
   }
 }

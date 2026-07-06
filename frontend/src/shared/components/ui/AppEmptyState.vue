@@ -31,7 +31,7 @@ withDefaults(defineProps<{
   padding: 3rem 1.5rem;
   text-align: center;
 }
-.empty-state__icon { color: var(--color-border-medium); margin-bottom: 1rem; }
-.empty-state__title { font-size: 1rem; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 0.375rem; }
-.empty-state__desc { font-size: 0.8125rem; color: var(--color-text-muted); max-width: 280px; }
+.empty-state__icon { color: var(--color-text-muted); margin-bottom: 1rem; }
+.empty-state__title { font-size: 1rem; font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.375rem; }
+.empty-state__desc { font-size: 0.8125rem; color: var(--color-text-secondary); max-width: 280px; }
 </style>

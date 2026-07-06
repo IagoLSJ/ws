@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -118,9 +123,11 @@ export class AuthService {
   }
 
   private async logAudit(usuarioId: string, acao: string, ip?: string, userAgent?: string) {
-    await this.prisma.auditLog.create({
-      data: { usuarioId, acao, ip, userAgent },
-    }).catch(() => {});
+    await this.prisma.auditLog
+      .create({
+        data: { usuarioId, acao, ip, userAgent },
+      })
+      .catch(() => {});
   }
 
   async recuperarSenha(dto: RecuperarSenhaDto) {

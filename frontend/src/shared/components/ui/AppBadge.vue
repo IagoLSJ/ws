@@ -20,9 +20,9 @@ withDefaults(defineProps<{
   border-radius: var(--radius-full);
   white-space: nowrap;
 }
-.app-badge--success { background: #D1FAE5; color: #065F46; }
-.app-badge--warning { background: #FEF3C7; color: #92400E; }
-.app-badge--danger { background: #FEE2E2; color: #991B1B; }
-.app-badge--info { background: #DBEAFE; color: #1E40AF; }
-.app-badge--neutral { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
+.app-badge--success { background: var(--color-success-soft); color: var(--color-success); }
+.app-badge--warning { background: var(--color-warning-soft); color: var(--color-warning); }
+.app-badge--danger { background: var(--color-danger-soft); color: var(--color-danger); }
+.app-badge--info { background: var(--color-info-soft); color: var(--color-info); }
+.app-badge--neutral { background: var(--color-surface-2); color: var(--color-text-2); }
 </style>

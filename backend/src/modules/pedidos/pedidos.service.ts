@@ -95,7 +95,16 @@ export class PedidosService {
       include: {
         itens: {
           include: {
-            produto: { select: { id: true, nome: true, preco: true, tipoDesconto: true, valorDesconto: true, controlaEstoque: true } },
+            produto: {
+              select: {
+                id: true,
+                nome: true,
+                preco: true,
+                tipoDesconto: true,
+                valorDesconto: true,
+                controlaEstoque: true,
+              },
+            },
             opcoesSelecionadas: { include: { opcao: true } },
           },
         },
@@ -118,14 +127,20 @@ export class PedidosService {
 
     const itensData = carrinho.itens.map((item) => {
       const precoBase = calcularPrecoFinal(item.produto);
-      const extraOpcoes = item.opcoesSelecionadas.reduce((s, o) => s + Number(o.opcao.precoExtra), 0);
+      const extraOpcoes = item.opcoesSelecionadas.reduce(
+        (s, o) => s + Number(o.opcao.precoExtra),
+        0,
+      );
       const precoUnitario = precoBase + extraOpcoes;
       return {
         produtoId: item.produto.id,
         produtoNome: item.produto.nome,
         precoUnitario: Math.round(precoUnitario * 100) / 100,
         quantidade: item.quantidade,
-        modificadores: item.opcoesSelecionadas.map((o) => ({ nome: o.opcao.nome, precoExtra: Number(o.opcao.precoExtra) })),
+        modificadores: item.opcoesSelecionadas.map((o) => ({
+          nome: o.opcao.nome,
+          precoExtra: Number(o.opcao.precoExtra),
+        })),
       };
     });
 
@@ -151,7 +166,10 @@ export class PedidosService {
           create: {
             valor: valorTotal,
             metodo: dto.metodoPagamento,
-            status: dto.metodoPagamento === MetodoPagamento.DINHEIRO ? StatusPagamento.APROVADO : StatusPagamento.PENDENTE,
+            status:
+              dto.metodoPagamento === MetodoPagamento.DINHEIRO
+                ? StatusPagamento.APROVADO
+                : StatusPagamento.PENDENTE,
           },
         },
       },
@@ -208,12 +226,25 @@ export class PedidosService {
     });
     if (!pedido) throw new NotFoundException('Pedido não encontrado');
 
-    if (status === StatusPedido.CONFIRMADO && pedido.status !== StatusPedido.CONFIRMADO) {
+    const statusFaturamento: StatusPedido[] = [
+      StatusPedido.CONFIRMADO,
+      StatusPedido.PREPARANDO,
+      StatusPedido.PRONTO,
+      StatusPedido.SAIU_PARA_ENTREGA,
+      StatusPedido.ENTREGUE,
+    ];
+
+    const jaFaturou = statusFaturamento.includes(pedido.status);
+    const vaiFaturar = statusFaturamento.includes(status);
+
+    if (vaiFaturar && !jaFaturou) {
       await this.baixarEstoque(pedido.negocioId, pedido, usuarioId);
     }
 
     if (status === StatusPedido.CANCELADO && pedido.status !== StatusPedido.CANCELADO) {
-      await this.estornarEstoque(pedido.negocioId, pedido, usuarioId);
+      if (jaFaturou) {
+        await this.estornarEstoque(pedido.negocioId, pedido, usuarioId);
+      }
     }
 
     return this.prisma.pedido.update({

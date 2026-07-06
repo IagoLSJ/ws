@@ -1,38 +1,73 @@
 :root {
+  /* Brand / Admin */
+  --color-brand: #4F46E5;
+  --color-brand-hover: #4338CA;
+  --color-brand-soft: #EEF2FF;
   --color-primary: #4F46E5;
   --color-primary-hover: #4338CA;
   --color-primary-light: #EEF2FF;
   --color-secondary: #0F1117;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #3B82F6;
 
+  /* Semantic */
+  --color-success: #10B981;
+  --color-success-soft: #D1FAE5;
+  --color-warning: #F59E0B;
+  --color-warning-soft: #FEF3C7;
+  --color-danger: #EF4444;
+  --color-danger-soft: #FEE2E2;
+  --color-info: #3B82F6;
+  --color-info-soft: #DBEAFE;
+
+  /* Surfaces */
+  --color-bg: #F9FAFB;
   --color-bg-primary: #F9FAFB;
+  --color-surface: #FFFFFF;
   --color-bg-secondary: #FFFFFF;
+  --color-surface-2: #F3F4F6;
   --color-bg-tertiary: #F3F4F6;
 
+  /* Text */
+  --color-text: #111827;
   --color-text-primary: #111827;
+  --color-text-2: #4B5563;
   --color-text-secondary: #4B5563;
+  --color-text-3: #9CA3AF;
   --color-text-muted: #9CA3AF;
 
+  /* Border */
+  --color-border: #E5E7EB;
   --color-border-light: #E5E7EB;
+  --color-border-strong: #D1D5DB;
   --color-border-medium: #D1D5DB;
 
+  /* Vitrine / Store */
+  --color-store-brand: #E11D48;
+  --color-store-brand-hover: #BE123C;
+  --color-store-accent: #FFD401;
+  --color-store-accent-soft: #FFF7CC;
+  --color-store-bg: #F7F7F8;
+  --color-store-surface: #FFFFFF;
+  --color-store-text: #111111;
+  --color-store-muted: #666666;
+
+  /* Shadow */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
+  /* Radius */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-full: 9999px;
 
+  /* Transition */
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;
 
+  /* Layout */
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
   --header-height: 64px;
@@ -40,20 +75,36 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --color-brand: #6366F1;
+    --color-brand-hover: #818CF8;
+    --color-brand-soft: #1E1B4B;
     --color-primary: #6366F1;
     --color-primary-hover: #818CF8;
     --color-primary-light: #1E1B4B;
     --color-secondary: #0B0D14;
 
+    --color-success-soft: #064E3B;
+    --color-warning-soft: #78350F;
+    --color-danger-soft: #7F1D1D;
+    --color-info-soft: #1E3A5F;
+
+    --color-bg: #0F1117;
     --color-bg-primary: #0F1117;
+    --color-surface: #1A1D27;
     --color-bg-secondary: #1A1D27;
+    --color-surface-2: #232634;
     --color-bg-tertiary: #232634;
 
+    --color-text: #F3F4F6;
     --color-text-primary: #F3F4F6;
+    --color-text-2: #D1D5DB;
     --color-text-secondary: #D1D5DB;
+    --color-text-3: #6B7280;
     --color-text-muted: #6B7280;
 
+    --color-border: #2D3140;
     --color-border-light: #2D3140;
+    --color-border-strong: #3F4354;
     --color-border-medium: #3F4354;
 
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);

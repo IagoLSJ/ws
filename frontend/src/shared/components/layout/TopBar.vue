@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
   top: 0;
   right: 0;
   height: var(--header-height);
-  background: var(--color-bg-secondary);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-light);
   display: flex;
   align-items: center;
@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
   top: calc(100% + 0.375rem);
   right: 0;
   min-width: 200px;
-  background: var(--color-bg-secondary);
+  background: var(--color-surface);
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
   width: 100%;
   padding: 0.625rem 1rem;
   font-size: 0.8125rem;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   transition: all var(--transition-fast);
 }
 .topbar__dropdown-item:hover { background: var(--color-bg-tertiary); color: var(--color-danger); }

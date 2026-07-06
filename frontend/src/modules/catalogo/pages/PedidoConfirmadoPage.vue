@@ -31,6 +31,7 @@
       <div class="confirmado-body">
         <div class="confirmado-success">
           <div class="confirmado-icon">&#10003;</div>
+          <span class="confirmado-eyebrow">Pedido recebido</span>
           <h1>Pedido Confirmado!</h1>
           <p class="confirmado-sub">Seu pedido foi recebido e está sendo processado.</p>
         </div>
@@ -199,8 +200,12 @@ onMounted(async () => {
 <style scoped>
 .confirmado-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background:
+    radial-gradient(circle at top left, rgba(225, 29, 72, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(255, 212, 1, 0.14), transparent 26%),
+    linear-gradient(180deg, #fffdfb 0%, var(--color-store-bg) 100%);
   padding-bottom: 3rem;
+  color: var(--color-store-text);
 }
 
 /* ============= COVER ============= */
@@ -222,7 +227,7 @@ onMounted(async () => {
 
 .vitrine-cover-content {
   width: 100%;
-  max-width: 600px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 1.25rem 1rem;
 }
@@ -234,17 +239,17 @@ onMounted(async () => {
   align-items: center;
   gap: 0.375rem;
   font-size: 0.8125rem;
-  color: #ffd401;
+  color: var(--color-store-accent);
   text-decoration: none;
   margin-bottom: 0.25rem;
 }
 
-.confirmado-back:hover { color: #fff; }
+.confirmado-back:hover { color: var(--color-store-surface); }
 
 .vitrine-title {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-store-surface);
   margin: 0;
 }
 
@@ -255,7 +260,7 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #fff;
+  color: var(--color-store-surface);
 }
 
 .confirmado-loading {
@@ -270,8 +275,8 @@ onMounted(async () => {
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid var(--color-border-light);
-  border-top-color: #ffd401;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-store-accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -282,20 +287,27 @@ onMounted(async () => {
 .confirmado-erro p { margin-bottom: 1rem; color: var(--color-text-muted); }
 
 .confirmado-body {
-  max-width: 520px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem 1rem 2.5rem;
 }
 
 .confirmado-success {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  padding: 1.5rem 1.25rem;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top, rgba(225, 29, 72, 0.08), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #fffafc 100%);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.08);
 }
 
 .confirmado-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  background: #22c55e;
+  width: 4rem;
+  height: 4rem;
+  background: linear-gradient(135deg, var(--color-store-brand), var(--color-store-brand-hover));
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -303,17 +315,44 @@ onMounted(async () => {
   justify-content: center;
   font-size: 1.75rem;
   margin: 0 auto 0.75rem;
+  box-shadow: 0 12px 24px rgba(225, 29, 72, 0.2);
 }
 
-.confirmado-success h1 { font-size: 1.375rem; margin-bottom: 0.25rem; }
+.confirmado-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-store-brand);
+}
+
+.confirmado-success h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+  color: var(--color-store-text);
+}
 .confirmado-sub { color: var(--color-text-muted); font-size: 0.875rem; }
 
 .confirmado-card {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 1rem;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06);
   margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.confirmado-card::before {
+  content: '';
+  display: block;
+  height: 4px;
+  margin: -1.25rem -1.25rem 1rem;
+  background: linear-gradient(90deg, var(--color-store-brand), var(--color-store-accent));
 }
 
 .card-title {
@@ -321,7 +360,7 @@ onMounted(async () => {
   font-weight: 600;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .confirmado-row {
@@ -330,12 +369,12 @@ onMounted(async () => {
   align-items: center;
   padding: 0.5rem 0;
   font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .confirmado-row:last-child { border-bottom: none; }
 .confirmado-label { color: var(--color-text-muted); }
-.confirmado-card p { font-size: 0.8125rem; margin-bottom: 0.25rem; }
+.confirmado-card p { font-size: 0.8125rem; margin-bottom: 0.25rem; color: var(--color-store-text); }
 .contato { margin-top: 0.5rem; font-weight: 500; }
 
 .confirmado-item {
@@ -343,12 +382,40 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 0.375rem 0;
   font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .confirmado-item:last-child { border-bottom: none; }
-.confirmado-item-info strong { display: block; font-size: 0.8125rem; }
+.confirmado-item-info strong { display: block; font-size: 0.8125rem; color: var(--color-store-text); }
 .confirmado-item-qtd { font-size: 0.75rem; color: var(--color-text-muted); }
-.confirmado-item-preco { font-weight: 600; white-space: nowrap; margin-left: 0.75rem; }
+.confirmado-item-preco { font-weight: 700; white-space: nowrap; margin-left: 0.75rem; color: var(--color-store-brand); }
 .confirmado-actions { text-align: center; margin-top: 1.5rem; }
+
+.confirmado-actions :deep(.app-button--primary) {
+  min-width: 220px;
+  background: linear-gradient(135deg, var(--color-store-brand), var(--color-store-brand-hover));
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(225, 29, 72, 0.18);
+}
+
+.confirmado-actions :deep(.app-button--primary:hover:not(:disabled)) {
+  background: linear-gradient(135deg, var(--color-store-brand-hover), #9f1239);
+}
+
+@media (max-width: 640px) {
+  .confirmado-body {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .confirmado-row,
+  .confirmado-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .confirmado-item-preco {
+    margin-left: 0;
+  }
+}
 </style>

@@ -38,6 +38,24 @@ export const adminRoutes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: 'negocios/:id/configuracoes',
+    name: 'NegocioConfiguracoes',
+    component: () => import('@/modules/negocios/pages/ConfiguracoesPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: 'auditoria',
+    name: 'Auditoria',
+    component: () => import('@/modules/auditoria/pages/AuditoriaPage.vue'),
+    meta: { requiresAuth: true, requiresBusiness: true },
+  },
+  {
+    path: 'relatorios',
+    name: 'Relatorios',
+    component: () => import('@/modules/relatorios/pages/RelatoriosPage.vue'),
+    meta: { requiresAuth: true, requiresBusiness: true },
+  },
+  {
     path: 'categorias',
     name: 'Categorias',
     component: () => import('@/modules/categorias/pages/CategoriasPage.vue'),

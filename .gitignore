@@ -21,3 +21,6 @@ docker/nginx/certs/
 
 # Railway
 .railway/
+
+#load-test
+load-test/

@@ -6,13 +6,13 @@ export default () => ({
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
-  minio: {
-    endpoint: process.env.MINIO_ENDPOINT || 'localhost',
-    port: parseInt(process.env.MINIO_PORT || '9000', 10),
-    accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-    bucket: process.env.MINIO_BUCKET || 'multinegocio',
-    publicUrl: process.env.MINIO_PUBLIC_URL || 'http://localhost:9000',
+  supabase: {
+    url: process.env.SUPABASE_URL || 'https://qvfdgxzgdumlralmvszc.supabase.co',
+    endpointUrl: process.env.SUPABASE_S3_ENDPOINT || process.env.MINIO_ENDPOINT_URL || 'https://qvfdgxzgdumlralmvszc.storage.supabase.co/storage/v1/s3',
+    accessKey: process.env.SUPABASE_S3_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || '',
+    secretKey: process.env.SUPABASE_S3_SECRET_KEY || process.env.MINIO_SECRET_KEY || '',
+    bucket: process.env.SUPABASE_BUCKET || process.env.MINIO_BUCKET || 'multinegocio',
+    region: process.env.SUPABASE_S3_REGION || process.env.MINIO_REGION || 'us-east-1',
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-jwt-secret',

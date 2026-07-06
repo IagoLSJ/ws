@@ -97,9 +97,8 @@ const convidando = ref(false);
 const conviteError = ref('');
 
 const roleOptions = [
-  { value: RoleNegocio.ADMIN, label: 'Admin' },
   { value: RoleNegocio.GERENTE, label: 'Gerente' },
-  { value: RoleNegocio.OPERADOR_ESTOQUE, label: 'Operador de Estoque' },
+  { value: RoleNegocio.OPERADOR, label: 'Operador' },
   { value: RoleNegocio.VISUALIZADOR, label: 'Visualizador' },
 ];
 

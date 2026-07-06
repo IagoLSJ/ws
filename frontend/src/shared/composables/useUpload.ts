@@ -1,19 +1,29 @@
 import { ref } from 'vue';
 import api from '@/shared/utils/api';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 export function useUpload() {
   const uploading = ref(false);
+  const uploadError = ref('');
 
   async function uploadImage(
     businessId: string,
     produtoId: string,
     file: File,
   ): Promise<string | null> {
+    uploadError.value = '';
+
+    if (file.size > MAX_FILE_SIZE) {
+      uploadError.value = `A imagem deve ter no máximo 5MB (${(file.size / 1024 / 1024).toFixed(1)}MB enviado)`;
+      return null;
+    }
+
     uploading.value = true;
     try {
       const { data: presigned } = await api.post<{ url: string; key: string }>(
         `/negocios/${businessId}/produtos/${produtoId}/imagens`,
-        { fileName: file.name },
+        { fileName: file.name, fileSize: file.size },
       );
 
       const uploadRes = await fetch(presigned.url, {
@@ -43,5 +53,5 @@ export function useUpload() {
     }
   }
 
-  return { uploading, uploadImage };
+  return { uploading, uploadError, uploadImage };
 }

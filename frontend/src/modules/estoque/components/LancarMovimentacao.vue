@@ -46,8 +46,6 @@ const tipoOptions = [
   { value: TipoMovimentacao.SAIDA_VENDA, label: 'Saída (Venda)' },
   { value: TipoMovimentacao.SAIDA_AJUSTE, label: 'Saída (Ajuste)' },
   { value: TipoMovimentacao.PERDA, label: 'Perda' },
-  { value: TipoMovimentacao.TRANSFERENCIA_ENTRADA, label: 'Transferência (Entrada)' },
-  { value: TipoMovimentacao.TRANSFERENCIA_SAIDA, label: 'Transferência (Saída)' },
   { value: TipoMovimentacao.INVENTARIO, label: 'Inventário' },
 ];
 

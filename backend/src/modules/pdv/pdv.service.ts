@@ -5,10 +5,13 @@ import { FinalizarPdvDto } from './dto/finalizar-pdv.dto';
 import { StatusPedido, MetodoPagamento, StatusPagamento, TipoMovimentacao } from '@prisma/client';
 import { calcularPrecoFinal } from '../../common/utils/preco';
 
-function aplicarDesconto(valor: number, desconto: { tipo: string; valor: number } | undefined): number {
+function aplicarDesconto(
+  valor: number,
+  desconto: { tipo: string; valor: number } | undefined,
+): number {
   if (!desconto || desconto.valor <= 0) return valor;
   if (desconto.tipo === 'FIXO') return Math.max(0, valor - desconto.valor);
-  if (desconto.tipo === 'PERCENTUAL') return Math.max(0, valor - (valor * desconto.valor / 100));
+  if (desconto.tipo === 'PERCENTUAL') return Math.max(0, valor - (valor * desconto.valor) / 100);
   return valor;
 }
 

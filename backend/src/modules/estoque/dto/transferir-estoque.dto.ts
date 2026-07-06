@@ -10,9 +10,15 @@ export class TransferirEstoqueDto {
   @IsString()
   negocioDestinoId!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  produtoDestinoId!: string;
+  produtoDestinoId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  itemDestinoId?: string;
 
   @ApiProperty({ example: 5 })
   @IsInt()

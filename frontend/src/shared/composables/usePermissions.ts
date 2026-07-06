@@ -6,9 +6,8 @@ import { RoleNegocio } from '@/shared/utils/types';
 
 const ROLE_HIERARCHY: Record<RoleNegocio, number> = {
   [RoleNegocio.SUPER_ADMIN]: 5,
-  [RoleNegocio.ADMIN]: 4,
-  [RoleNegocio.GERENTE]: 3,
-  [RoleNegocio.OPERADOR_ESTOQUE]: 2,
+  [RoleNegocio.GERENTE]: 4,
+  [RoleNegocio.OPERADOR]: 3,
   [RoleNegocio.VISUALIZADOR]: 1,
 };
 

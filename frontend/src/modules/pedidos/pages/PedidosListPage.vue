@@ -1,34 +1,56 @@
 <template>
   <div>
-    <div class="page-header">
-      <h1>Pedidos</h1>
-    </div>
+    <PageHeader title="Pedidos">
+      <template #actions>
+        <AppButton variant="secondary" size="sm" @click="fetchData">
+          Atualizar
+        </AppButton>
+      </template>
+    </PageHeader>
 
     <div v-if="loading" class="loading">Carregando...</div>
 
     <template v-else>
-      <div class="table-toolbar">
+      <FilterBar>
         <div class="search-wrapper">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
-          <input v-model="pedidosBusca" placeholder="Buscar por ID..." class="search-input" />
+          <input v-model="pedidosBusca" placeholder="Buscar por ID ou contato..." class="search-input" />
         </div>
         <select v-model="filtroStatus" class="filter-select">
           <option v-for="o in filtroStatusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
-      </div>
+        <select v-model="filtroEntrega" class="filter-select">
+          <option value="">Toda entrega</option>
+          <option value="ENTREGA">Entrega</option>
+          <option value="RETIRADA">Retirada</option>
+        </select>
+      </FilterBar>
 
       <AppTable
         :columns="columns"
         :data="paginatedItems"
         empty-text="Nenhum pedido ainda."
       >
+        <template #cell-id="{ row }">
+          <span class="cell-id">#{{ (row as Pedido).id.slice(0, 8) }}</span>
+        </template>
         <template #cell-status="{ row }">
           <AppBadge :variant="statusVariant((row as Pedido).status)">{{ (row as Pedido).status }}</AppBadge>
         </template>
+        <template #cell-tipoEntrega="{ row }">
+          <span class="cell-tipo">{{ (row as Pedido).tipoEntrega || '-' }}</span>
+        </template>
+        <template #cell-contato="{ row }">
+          <span class="cell-contato">{{ (row as Pedido).contato || '-' }}</span>
+        </template>
+        <template #cell-agendadoPara="{ row }">
+          <span v-if="(row as Pedido).agendadoPara" class="cell-agendado">{{ formatDate((row as Pedido).agendadoPara!) }}</span>
+          <span v-else class="text-muted">-</span>
+        </template>
         <template #cell-total="{ row }">
-          {{ formatCurrency(Number((row as Pedido).total)) }}
+          <strong>{{ formatCurrency(Number((row as Pedido).total)) }}</strong>
         </template>
         <template #cell-criadoEm="{ row }">
           {{ formatDate((row as Pedido).criadoEm) }}
@@ -58,43 +80,86 @@
     <AppModal :open="!!pedidoDetalhe" title="Detalhes do Pedido" @close="pedidoDetalhe = null">
       <template v-if="pedidoDetalhe">
         <div class="modal-section">
+          <h3>Informações</h3>
+          <div class="detalhe-row">
+            <span class="label">Pedido</span>
+            <strong>#{{ pedidoDetalhe.id }}</strong>
+          </div>
           <div class="detalhe-row">
             <span class="label">Status</span>
             <AppBadge :variant="statusVariant(pedidoDetalhe.status)">{{ pedidoDetalhe.status }}</AppBadge>
-          </div>
-          <div class="detalhe-row">
-            <span class="label">Total</span>
-            <strong>{{ formatCurrency(Number(pedidoDetalhe.total)) }}</strong>
           </div>
           <div class="detalhe-row">
             <span class="label">Data</span>
             <span>{{ formatDate(pedidoDetalhe.criadoEm) }}</span>
           </div>
           <div class="detalhe-row">
-            <span class="label">Pagamento</span>
-            <span>{{ pedidoDetalhe.pagamentos?.[0]?.metodo }} - <AppBadge>{{ pedidoDetalhe.pagamentos?.[0]?.status }}</AppBadge></span>
+            <span class="label">Tipo</span>
+            <span>{{ pedidoDetalhe.tipoEntrega === 'ENTREGA' ? 'Entrega' : pedidoDetalhe.tipoEntrega === 'RETIRADA' ? 'Retirada' : '-' }}</span>
           </div>
-          <div v-if="pedidoDetalhe.endereco" class="detalhe-endereco">
-            <span class="label">Endereço</span>
-            <p v-if="pedidoDetalhe.endereco.logradouro">
-              {{ pedidoDetalhe.endereco.logradouro }}, {{ pedidoDetalhe.endereco.numero }}
-              <span v-if="pedidoDetalhe.endereco.complemento"> - {{ pedidoDetalhe.endereco.complemento }}</span>
-            </p>
-            <p v-if="pedidoDetalhe.endereco.bairro">{{ pedidoDetalhe.endereco.bairro }}</p>
-            <p v-if="pedidoDetalhe.endereco.cidade">{{ pedidoDetalhe.endereco.cidade }}{{ pedidoDetalhe.endereco.estado ? ' - ' + pedidoDetalhe.endereco.estado : '' }}</p>
-            <p v-if="pedidoDetalhe.endereco.cep">CEP: {{ pedidoDetalhe.endereco.cep }}</p>
+          <div v-if="pedidoDetalhe.taxaFrete" class="detalhe-row">
+            <span class="label">Taxa de Frete</span>
+            <span>{{ formatCurrency(Number(pedidoDetalhe.taxaFrete)) }}</span>
           </div>
-          <div v-if="pedidoDetalhe.contato" class="detalhe-row">
-            <span class="label">Contato</span>
-            <span>{{ pedidoDetalhe.contato }}</span>
+          <div class="detalhe-row">
+            <span class="label">Subtotal</span>
+            <span>{{ formatCurrency(Number(pedidoDetalhe.total) - Number(pedidoDetalhe.taxaFrete ?? 0)) }}</span>
+          </div>
+          <div class="detalhe-row">
+            <span class="label">Total</span>
+            <strong>{{ formatCurrency(Number(pedidoDetalhe.total)) }}</strong>
+          </div>
+          <div v-if="pedidoDetalhe.agendadoPara" class="detalhe-row">
+            <span class="label">Agendado para</span>
+            <span class="text-highlight">{{ formatDate(pedidoDetalhe.agendadoPara) }}</span>
           </div>
         </div>
 
+        <div v-if="pedidoDetalhe.endereco" class="modal-section">
+          <h3>Endereço de Entrega</h3>
+          <div class="endereco-box">
+            <p v-if="pedidoDetalhe.endereco.logradouro">
+              <strong>{{ pedidoDetalhe.endereco.logradouro }}{{ pedidoDetalhe.endereco.numero ? ', ' + pedidoDetalhe.endereco.numero : '' }}</strong>
+              <span v-if="pedidoDetalhe.endereco.complemento"> - {{ pedidoDetalhe.endereco.complemento }}</span>
+            </p>
+            <p v-if="pedidoDetalhe.endereco.bairro">{{ pedidoDetalhe.endereco.bairro }}</p>
+            <p v-if="pedidoDetalhe.endereco.cidade || pedidoDetalhe.endereco.estado">
+              {{ pedidoDetalhe.endereco.cidade }}{{ pedidoDetalhe.endereco.estado ? ' - ' + pedidoDetalhe.endereco.estado : '' }}
+            </p>
+            <p v-if="pedidoDetalhe.endereco.cep">CEP: {{ pedidoDetalhe.endereco.cep }}</p>
+          </div>
+        </div>
+
+        <div v-if="pedidoDetalhe.contato" class="modal-section">
+          <h3>Contato</h3>
+          <p class="contato-text">{{ pedidoDetalhe.contato }}</p>
+        </div>
+
+        <div v-if="pedidoDetalhe.observacao" class="modal-section">
+          <h3>Observação</h3>
+          <p class="obs-text">{{ pedidoDetalhe.observacao }}</p>
+        </div>
+
         <div class="modal-section">
-          <h3>Itens</h3>
+          <h3>Pagamento</h3>
+          <div v-if="pedidoDetalhe.pagamentos?.length" class="pagamento-list">
+            <div v-for="pg in pedidoDetalhe.pagamentos" :key="pg.id" class="detalhe-row">
+              <span class="label">{{ pg.metodo }}</span>
+              <AppBadge>{{ pg.status }}</AppBadge>
+            </div>
+          </div>
+          <p v-else class="text-muted">Nenhum pagamento registrado</p>
+        </div>
+
+        <div class="modal-section">
+          <h3>Itens ({{ pedidoDetalhe.itens.length }})</h3>
           <div v-for="item in pedidoDetalhe.itens" :key="item.id" class="item-row">
-            <span>{{ item.produtoNome }} × {{ item.quantidade }}</span>
-            <span>{{ formatCurrency(Number(item.precoUnitario) * item.quantidade) }}</span>
+            <div class="item-info">
+              <span class="item-name">{{ item.produtoNome }}</span>
+              <span class="item-qty">× {{ item.quantidade }}</span>
+              <span class="item-unit">{{ formatCurrency(Number(item.precoUnitario)) }} un</span>
+            </div>
+            <span class="item-total">{{ formatCurrency(Number(item.precoUnitario) * item.quantidade) }}</span>
           </div>
         </div>
       </template>
@@ -124,6 +189,8 @@ import { useBusinessStore } from '@/app/stores/business.store';
 import { useUiStore } from '@/app/stores/ui.store';
 import { RoleNegocio, StatusPedido, type Pedido } from '@/shared/utils/types';
 import { formatCurrency } from '@/shared/utils/formatCurrency';
+import PageHeader from '@/shared/components/layout/PageHeader.vue';
+import FilterBar from '@/shared/components/layout/FilterBar.vue';
 import AppTable from '@/shared/components/ui/AppTable.vue';
 import AppButton from '@/shared/components/ui/AppButton.vue';
 import AppBadge from '@/shared/components/ui/AppBadge.vue';
@@ -137,6 +204,7 @@ const ui = useUiStore();
 const pedidos = ref<Pedido[]>([]);
 const pedidosBusca = ref('');
 const filtroStatus = ref('');
+const filtroEntrega = ref('');
 const loading = ref(true);
 const pedidoDetalhe = ref<Pedido | null>(null);
 const pedidoStatus = ref<Pedido | null>(null);
@@ -149,9 +217,14 @@ const pedidosFiltrados = computed(() => {
   if (filtroStatus.value) {
     result = result.filter((p) => p.status === filtroStatus.value);
   }
+  if (filtroEntrega.value) {
+    result = result.filter((p) => p.tipoEntrega === filtroEntrega.value);
+  }
   if (pedidosBusca.value) {
     const q = pedidosBusca.value.toLowerCase();
-    result = result.filter((p) => p.id.toLowerCase().includes(q));
+    result = result.filter(
+      (p) => p.id.toLowerCase().includes(q) || p.contato?.toLowerCase().includes(q),
+    );
   }
   return result;
 });
@@ -159,7 +232,11 @@ const pedidosFiltrados = computed(() => {
 const { page, totalPages, paginatedItems, setPage } = usePagination(pedidosFiltrados, 10);
 
 const columns = [
+  { key: 'id', label: 'Pedido' },
   { key: 'status', label: 'Status' },
+  { key: 'tipoEntrega', label: 'Tipo' },
+  { key: 'contato', label: 'Contato' },
+  { key: 'agendadoPara', label: 'Agendado' },
   { key: 'total', label: 'Total' },
   { key: 'criadoEm', label: 'Data' },
   { key: 'acoes', label: '' },
@@ -252,27 +329,43 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-.loading { color: var(--color-text-muted); text-align: center; padding: 2rem; }
-.modal-section { margin-bottom: 1rem; }
-.modal-section h3 { font-size: 0.9375rem; margin-bottom: 0.5rem; }
-.detalhe-row { display: flex; justify-content: space-between; padding: 0.375rem 0; font-size: 0.875rem; border-bottom: 1px solid var(--color-border-light); }
+.loading { color: var(--color-text-3); text-align: center; padding: 2rem; }
+.text-muted { color: var(--color-text-3); font-size: 0.8125rem; }
+.text-highlight { color: var(--color-warning); font-weight: 600; }
+
+.modal-section { margin-bottom: 1.25rem; }
+.modal-section h3 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.625rem; color: var(--color-text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.detalhe-row { display: flex; justify-content: space-between; padding: 0.375rem 0; font-size: 0.875rem; border-bottom: 1px solid var(--color-border); }
 .detalhe-row:last-child { border-bottom: none; }
-.detalhe-endereco { padding: 0.375rem 0; font-size: 0.875rem; border-bottom: 1px solid var(--color-border-light); }
-.detalhe-endereco p { margin: 0.125rem 0; }
-.label { color: var(--color-text-muted); }
-.item-row { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.875rem; }
+.label { color: var(--color-text-3); }
+.endereco-box { background: var(--color-bg-tertiary); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.875rem; }
+.endereco-box p { margin: 0.125rem 0; line-height: 1.5; }
+.contato-text { font-size: 0.9375rem; font-weight: 600; }
+.obs-text { font-size: 0.875rem; font-style: italic; color: var(--color-text-2); }
+.pagamento-list .detalhe-row:last-child { border-bottom: none; }
+.item-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.875rem; }
+.item-row:last-child { border-bottom: none; }
+.item-info { display: flex; gap: 0.375rem; align-items: baseline; flex-wrap: wrap; }
+.item-name { font-weight: 600; }
+.item-qty { color: var(--color-text-3); }
+.item-unit { font-size: 0.75rem; color: var(--color-text-3); }
+.item-total { font-weight: 700; white-space: nowrap; }
 .error-msg { font-size: 0.8125rem; color: var(--color-danger); }
 .modal-footer-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
-.table-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-.search-wrapper { display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-secondary); flex: 1; max-width: 320px; }
-.search-wrapper:focus-within { border-color: var(--color-primary); }
-.search-icon { flex-shrink: 0; color: var(--color-text-muted); }
-.search-input { border: none; outline: none; font-size: 0.8125rem; width: 100%; background: transparent; color: var(--color-text-primary); }
-.filter-select { padding: 0.375rem 0.625rem; font-size: 0.8125rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-secondary); color: var(--color-text-primary); outline: none; cursor: pointer; }
-.pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light); }
-.page-btn { padding: 0.375rem 0.75rem; font-size: 0.8125rem; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-secondary); color: var(--color-text-secondary); cursor: pointer; transition: all var(--transition-fast); }
-.page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+
+.cell-id { font-family: monospace; font-size: 0.8125rem; font-weight: 700; }
+.cell-tipo { font-size: 0.8125rem; }
+.cell-contato { font-size: 0.8125rem; }
+.cell-agendado { font-size: 0.8125rem; color: var(--color-warning); }
+
+.search-wrapper { display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); flex: 1; max-width: 320px; }
+.search-wrapper:focus-within { border-color: var(--color-brand); }
+.search-icon { flex-shrink: 0; color: var(--color-text-3); }
+.search-input { border: none; outline: none; font-size: 0.8125rem; width: 100%; background: transparent; color: var(--color-text); }
+.filter-select { padding: 0.375rem 0.625rem; font-size: 0.8125rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); outline: none; cursor: pointer; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+.page-btn { padding: 0.375rem 0.75rem; font-size: 0.8125rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-2); cursor: pointer; transition: all var(--transition-fast); }
+.page-btn:hover:not(:disabled) { border-color: var(--color-brand); color: var(--color-brand); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.page-info { font-size: 0.8125rem; color: var(--color-text-muted); }
+.page-info { font-size: 0.8125rem; color: var(--color-text-3); }
 </style>

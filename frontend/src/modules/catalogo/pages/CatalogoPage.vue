@@ -14,7 +14,7 @@
 
     <!-- Search -->
     <div class="vitrine-search-wrapper">
-      <div class="vitrine-search" :style="{ borderColor: YELLOW }">
+      <div class="vitrine-search">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
         </svg>
@@ -48,7 +48,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="vitrine-loading">
-      <div class="spinner" :style="{ borderTopColor: YELLOW }" />
+        <div class="spinner" />
       <span>Carregando...</span>
     </div>
 
@@ -56,15 +56,13 @@
       <!-- Category tabs -->
       <nav class="vitrine-categorias">
         <button
-          :class="['cat-tab', { 'cat-tab--active': !categoriaAtiva }]"
-          :style="!categoriaAtiva ? { background: YELLOW, borderColor: YELLOW } : {}"
+          :class="['cat-tab', { 'cat-tab--selected': !categoriaAtiva }]"
           @click="categoriaAtiva = ''"
         >Todos</button>
         <button
           v-for="cat in categorias"
           :key="cat.id"
-          :class="['cat-tab', { 'cat-tab--active': categoriaAtiva === cat.id }]"
-          :style="categoriaAtiva === cat.id ? { background: YELLOW, borderColor: YELLOW } : {}"
+          :class="['cat-tab', { 'cat-tab--selected': categoriaAtiva === cat.id }]"
           @click="categoriaAtiva = cat.id"
         >{{ cat.nome }}</button>
       </nav>
@@ -89,7 +87,7 @@
             <h3>{{ p.nome }}</h3>
             <p v-if="p.descricao" class="produto-desc">{{ p.descricao }}</p>
             <div class="produto-preco-row">
-              <span class="produto-preco" :style="{ color: RED }">
+              <span class="produto-preco">
                 <template v-if="p.tipoDesconto && p.valorDesconto && p.valorDesconto > 0">
                   <span class="produto-preco--promo">{{ formatCurrency(calcularPrecoFinal(p)) }}</span>
                   <span class="produto-preco--original">{{ formatCurrency(Number(p.preco)) }}</span>
@@ -99,7 +97,7 @@
                   {{ formatCurrency(Number(p.preco)) }}
                 </template>
               </span>
-              <button class="produto-add" :style="{ background: YELLOW }" @click.stop="quickAdd(p)">
+               <button class="produto-add" @click.stop="quickAdd(p)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
@@ -130,7 +128,7 @@
             </div>
             <div class="modal-info">
               <h2>{{ produtoSelecionado.nome }}</h2>
-              <div class="modal-preco" :style="{ color: RED }">
+              <div class="modal-preco">
                 <template v-if="produtoSelecionado.tipoDesconto && produtoSelecionado.valorDesconto && produtoSelecionado.valorDesconto > 0">
                   <span class="preco-promo">{{ formatCurrency(calcularPrecoFinal(produtoSelecionado)) }}</span>
                   <span class="preco-original">{{ formatCurrency(Number(produtoSelecionado.preco)) }}</span>
@@ -167,7 +165,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="modal-add-btn" :style="{ background: YELLOW, color: '#000' }" :disabled="adicionando" @click="adicionarAoCarrinho">
+            <button class="modal-add-btn" :disabled="adicionando" @click="adicionarAoCarrinho">
               <template v-if="adicionando">
                 <svg class="btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dashoffset" values="32;0" dur="0.6s" repeatCount="indefinite"/></circle></svg>
               </template>
@@ -180,7 +178,7 @@
 
     <!-- Floating Cart Button -->
     <Teleport to="body">
-      <button v-if="carrinho.quantidadeTotal > 0 && !produtoSelecionado" class="vitrine-fab" :style="{ background: YELLOW }" @click="carrinho.abrir()">
+      <button v-if="carrinho.quantidadeTotal > 0 && !produtoSelecionado" class="vitrine-fab" @click="carrinho.abrir()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
           <path d="m1 1 4 0 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
@@ -204,9 +202,8 @@ import { calcularPrecoFinal, formatarDesconto } from '@/shared/utils/types';
 import { formatCurrency } from '@/shared/utils/formatCurrency';
 import CarrinhoDrawer from '@/shared/components/carrinho/CarrinhoDrawer.vue';
 
-const YELLOW = '#ffd401';
-const RED = '#fe0000';
-const AMBER = '#df952f';
+const STORE_ACCENT = 'var(--color-store-accent)';
+const STORE_BRAND = 'var(--color-store-brand)';
 
 const route = useRoute();
 const router = useRouter();
@@ -327,16 +324,16 @@ onMounted(async () => {
 <style scoped>
 .vitrine {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--color-store-bg);
   padding-bottom: 5rem;
 }
 
 /* ============= BUSINESS SELECTOR ============= */
 .vitrine-selector {
-  background: #fff;
+  background: var(--color-store-surface);
   max-width: 880px;
   margin: 0.5rem auto 0;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
@@ -370,7 +367,7 @@ onMounted(async () => {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid #e5e5e5;
+  border: 2px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,7 +376,7 @@ onMounted(async () => {
 }
 
 .selector-item--active .selector-avatar {
-  border-width: 2.5px;
+  border-color: var(--color-store-brand);
   box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
 }
 
@@ -392,16 +389,16 @@ onMounted(async () => {
 .selector-avatar-letter {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-store-surface);
 }
 
-.selector-item--active .selector-avatar-letter { color: #fff; }
+.selector-item--active .selector-avatar-letter { color: var(--color-store-surface); }
 
-.selector-item:not(.selector-item--active) .selector-avatar-letter { color: #666; }
+.selector-item:not(.selector-item--active) .selector-avatar-letter { color: var(--color-store-muted); }
 
 .selector-name {
   font-size: 0.6875rem;
-  color: #666;
+  color: var(--color-store-muted);
   text-align: center;
   max-width: 64px;
   overflow: hidden;
@@ -410,7 +407,7 @@ onMounted(async () => {
 }
 
 .selector-item--active .selector-name {
-  color: #111;
+  color: var(--color-store-text);
   font-weight: 600;
 }
 
@@ -447,7 +444,7 @@ onMounted(async () => {
 .vitrine-title {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-store-surface);
   margin: 0;
 }
 
@@ -458,10 +455,8 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #fff;
+  color: var(--color-store-surface);
 }
-
-
 
 /* ============= SEARCH ============= */
 .vitrine-search-wrapper {
@@ -477,16 +472,16 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #fff;
-  border: 2px solid #e11d48;
-  border-radius: 12px;
+  background: var(--color-store-surface);
+  border: 2px solid var(--color-store-brand);
+  border-radius: var(--radius-xl);
   padding: 0 0.875rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 .search-icon {
   flex-shrink: 0;
-  color: #999;
+  color: var(--color-store-muted);
 }
 
 .search-input {
@@ -496,6 +491,7 @@ onMounted(async () => {
   font-size: 0.875rem;
   outline: none;
   background: transparent;
+  color: var(--color-store-text);
   min-width: 0;
 }
 
@@ -506,14 +502,14 @@ onMounted(async () => {
   align-items: center;
   gap: 0.75rem;
   padding: 3rem;
-  color: var(--color-text-muted);
+  color: var(--color-store-muted);
 }
 
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid var(--color-border-light);
-  border-top-color: #e11d48;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-store-accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -535,21 +531,25 @@ onMounted(async () => {
 
 .cat-tab {
   padding: 0.5rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.8125rem;
   font-weight: 500;
   white-space: nowrap;
-  background: #fff;
-  color: #333;
-  border: 1px solid #e5e5e5;
+  background: var(--color-store-surface);
+  color: var(--color-store-text);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
 }
 
-.cat-tab:hover { border-color: #999; }
+.cat-tab:hover { border-color: var(--color-store-muted); }
 
-.cat-tab--active { color: #fff; border-color: transparent; }
+.cat-tab--selected {
+  color: #000;
+  border-color: var(--color-store-accent);
+  background: var(--color-store-accent);
+}
 
 /* ============= PRODUCT GRID ============= */
 .vitrine-grid {
@@ -570,8 +570,8 @@ onMounted(async () => {
 }
 
 .produto-card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--color-store-surface);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.2s;
@@ -585,7 +585,7 @@ onMounted(async () => {
 .produto-image {
   width: 100%;
   aspect-ratio: 1;
-  background: #f0f0f0;
+  background: var(--color-store-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,7 +598,7 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-.produto-placeholder { color: #ccc; }
+.produto-placeholder { color: var(--color-store-muted); }
 
 .produto-body {
   padding: 0.625rem;
@@ -610,14 +610,14 @@ onMounted(async () => {
 .produto-body h3 {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #111;
+  color: var(--color-store-text);
   margin-bottom: 0.125rem;
   line-height: 1.2;
 }
 
 .produto-desc {
   font-size: 0.6875rem;
-  color: #888;
+  color: var(--color-store-muted);
   margin-bottom: 0.375rem;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -636,16 +636,16 @@ onMounted(async () => {
 .produto-preco {
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #e11d48;
+  color: var(--color-store-brand);
 }
 
-.produto-preco--promo { color: #dc2626; }
+.produto-preco--promo { color: var(--color-store-brand); }
 
-.produto-preco--badge { font-size: 0.5rem; font-weight: 700; color: #fff; background: #dc2626; padding: 0.0625rem 0.3125rem; border-radius: var(--radius-full); margin-left: 0.25rem; vertical-align: middle; }
+.produto-preco--badge { font-size: 0.5rem; font-weight: 700; color: var(--color-store-surface); background: var(--color-store-brand); padding: 0.0625rem 0.3125rem; border-radius: var(--radius-full); margin-left: 0.25rem; vertical-align: middle; }
 
 .produto-preco--original {
   font-size: 0.625rem;
-  color: #999;
+  color: var(--color-store-muted);
   text-decoration: line-through;
   font-weight: 400;
   margin-left: 0.25rem;
@@ -661,6 +661,7 @@ onMounted(async () => {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  background: var(--color-store-accent);
   transition: opacity 0.2s;
 }
 
@@ -669,13 +670,13 @@ onMounted(async () => {
 .vitrine-empty {
   text-align: center;
   padding: 2rem;
-  color: var(--color-text-muted);
+  color: var(--color-store-muted);
 }
 
 .vitrine-error {
   text-align: center;
   padding: 2rem;
-  color: var(--color-text-muted);
+  color: var(--color-store-muted);
 }
 
 /* ============= MODAL (Bottom Sheet) ============= */
@@ -693,7 +694,7 @@ onMounted(async () => {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-sheet {
-  background: #fff;
+  background: var(--color-store-surface);
   border-radius: 20px 20px 0 0;
   max-width: 480px;
   width: 100%;
@@ -709,7 +710,7 @@ onMounted(async () => {
 .modal-handle {
   width: 36px;
   height: 4px;
-  background: #ddd;
+  background: var(--color-border);
   border-radius: 2px;
   margin: 0.625rem auto 0;
   flex-shrink: 0;
@@ -724,7 +725,7 @@ onMounted(async () => {
   border-radius: 50%;
   border: none;
   background: rgba(0,0,0,0.06);
-  color: #666;
+  color: var(--color-store-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -742,7 +743,7 @@ onMounted(async () => {
   width: 100%;
   aspect-ratio: 16/10;
   overflow: hidden;
-  background: #f0f0f0;
+  background: var(--color-store-bg);
 }
 
 .modal-image img { width: 100%; height: 100%; object-fit: cover; }
@@ -753,21 +754,21 @@ onMounted(async () => {
   font-size: 1.125rem;
   font-weight: 700;
   margin-bottom: 0.375rem;
-  color: #111;
+  color: var(--color-store-text);
 }
 
 .modal-preco {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #e11d48;
+  color: var(--color-store-brand);
   margin-bottom: 0.75rem;
 }
 
-.modal-preco .preco-promo { color: #dc2626; }
+.modal-preco .preco-promo { color: var(--color-store-brand); }
 
 .modal-preco .preco-original {
   font-size: 0.875rem;
-  color: #999;
+  color: var(--color-store-muted);
   text-decoration: line-through;
   font-weight: 400;
   margin-left: 0.5rem;
@@ -775,7 +776,7 @@ onMounted(async () => {
 
 .modal-desc {
   font-size: 0.875rem;
-  color: #666;
+  color: var(--color-store-muted);
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -783,20 +784,20 @@ onMounted(async () => {
 .mod-group {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  background: #f8f8f8;
-  border-radius: 10px;
+  background: var(--color-store-bg);
+  border-radius: var(--radius-lg);
 }
 
 .mod-group h4 {
   font-size: 0.8125rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--color-store-text);
 }
 
-.obrigatorio { color: #dc2626; }
+.obrigatorio { color: var(--color-store-brand); }
 
-.mod-limit { font-weight: 400; color: #999; font-size: 0.75rem; }
+.mod-limit { font-weight: 400; color: var(--color-store-muted); font-size: 0.75rem; }
 
 .mod-opcao { margin-bottom: 0.25rem; }
 
@@ -806,35 +807,35 @@ onMounted(async () => {
   gap: 0.5rem;
   font-size: 0.8125rem;
   padding: 0.5rem 0.625rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .mod-opcao label:hover { background: rgba(0,0,0,0.02); }
 
-.mod-opcao--checked { background: var(--color-bg-tertiary); }
+.mod-opcao--checked { background: var(--color-store-accent-soft); }
 
-.mod-opcao input { accent-color: #ffd401; }
+.mod-opcao input { accent-color: var(--color-store-accent); }
 
-.mod-opcao-nome { flex: 1; color: #333; }
+.mod-opcao-nome { flex: 1; color: var(--color-store-text); }
 
-.mod-preco { color: #999; font-size: 0.75rem; }
+.mod-preco { color: var(--color-store-muted); font-size: 0.75rem; }
 
 .modal-obs { padding: 0 1.25rem; margin-bottom: 0.75rem; }
 
 .obs-input {
   width: 100%;
   padding: 0.625rem 0.75rem;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 0.8125rem;
   outline: none;
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
 
-.obs-input:focus { border-color: #ffd401; }
+.obs-input:focus { border-color: var(--color-store-accent); }
 
 .modal-footer {
   padding: 0.75rem 1.25rem 1.25rem;
@@ -845,15 +846,16 @@ onMounted(async () => {
   width: 100%;
   padding: 0.8125rem;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  background: var(--color-store-accent);
+  color: #000;
   transition: opacity 0.2s;
 }
 
@@ -871,11 +873,12 @@ onMounted(async () => {
   gap: 0.5rem;
   padding: 0.75rem 1.25rem 0.75rem 0.875rem;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   color: #000;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
+  background: var(--color-store-accent);
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   z-index: 100;
   animation: fabIn 0.3s ease;
